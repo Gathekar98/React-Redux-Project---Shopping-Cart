@@ -293,3 +293,33 @@ body {
   font-size: 13px;
   margin: 4px 0 0;
 }
+.products-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  gap: 20px;
+}
+
+.filters {
+  display: flex;
+  gap: 12px;
+}
+
+.filters input,
+.filters select {
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-family: Arial, sans-serif;
+}
+
+.filters input {
+  width: 220px;
+}
+
+.product-category {
+  color: #666;
+  font-size: 14px;
+  margin: 4px 0;
+}

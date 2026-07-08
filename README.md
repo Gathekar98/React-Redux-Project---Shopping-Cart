@@ -2585,3 +2585,616 @@ You can say:
 I used local state for checkout form values and validation errors because this data is only required inside the checkout component. I created a validateForm function that checks all form fields and stores error messages in an errors object. If validation fails, I stop form submission and show field-level errors. Redux is used only for global cart state.
 
 Complete this step and send done. Next, we will add Redux DevTools understanding + debugging flow, which is very useful for interviews and real development.
+
+Great. Now we will learn Redux DevTools + debugging flow.
+
+Redux DevTools is useful because it shows:
+
+Which action was dispatched
+What data was sent in payload
+How Redux state changed after the action
+Previous state and next state
+
+Redux’s own docs describe DevTools as a way to trace when, where, why, and how state changed. Redux Toolkit’s configureStore automatically sets up Redux DevTools integration, so we do not need extra store setup for this project.
+
+Step 1: Install Redux DevTools browser extension
+
+In your browser, install:
+
+Redux DevTools
+
+After installing, open your app:
+
+http://localhost:5173/
+
+Then open browser developer tools:
+
+Right click → Inspect
+
+You should see a new tab named:
+
+Redux
+Step 2: Open Redux tab
+
+Inside the Redux tab, you will see your Redux store state.
+
+Your current state should look like this:
+
+{
+  cart: {
+    cartItems: [],
+    totalQuantity: 0,
+    totalAmount: 0
+  }
+}
+
+This is because our store.js has this reducer key:
+
+reducer: {
+  cart: cartReducer,
+}
+
+So Redux state becomes:
+
+state.cart
+Step 3: Dispatch your first action and watch it
+
+Now go to Products page and click:
+
+Add to Cart
+
+In Redux DevTools, you should see an action like:
+
+cart/addToCart
+
+Click that action.
+
+You will see something like this:
+
+{
+  type: "cart/addToCart",
+  payload: {
+    id: 1,
+    name: "Wireless Headphones",
+    price: 2499,
+    image: "..."
+  }
+}
+Meaning
+
+This line in ProductCard.jsx:
+
+dispatch(addToCart(product));
+
+created this action:
+
+cart/addToCart
+
+And this product became the payload:
+
+action.payload
+Step 4: Check state after action
+
+After clicking cart/addToCart, check the state in DevTools.
+
+It should become:
+
+{
+  cart: {
+    cartItems: [
+      {
+        id: 1,
+        name: "Wireless Headphones",
+        price: 2499,
+        image: "...",
+        quantity: 1
+      }
+    ],
+    totalQuantity: 1,
+    totalAmount: 2499
+  }
+}
+
+This confirms your reducer worked.
+
+Step 5: Test all actions
+
+Now perform these actions one by one and watch Redux DevTools:
+
+UI Action	Redux Action
+Click Add to Cart	cart/addToCart
+Click +	cart/increaseQuantity
+Click -	cart/decreaseQuantity
+Click Remove	cart/removeFromCart
+Click Clear Cart	cart/clearCart
+
+This is the most practical way to understand Redux.
+
+You are not just guessing what happened. You are seeing every state change.
+
+Step 6: Add temporary console logs for learning
+
+Open:
+
+src/features/cart/cartSlice.js
+
+Inside addToCart, add this temporarily:
+
+addToCart: (state, action) => {
+  console.log("Action received:", action);
+  console.log("Product payload:", action.payload);
+
+  const product = action.payload;
+
+  const existingItem = state.cartItems.find(
+    (item) => item.id === product.id
+  );
+
+  if (existingItem) {
+    existingItem.quantity += 1;
+  } else {
+    state.cartItems.push({
+      id: product.id,
+      name: product.name,
+      price: product.price,
+      image: product.image,
+      quantity: 1,
+    });
+  }
+
+  calculateTotals(state);
+},
+
+Now click Add to Cart and open browser Console.
+
+You will see the action object.
+
+After checking, remove these logs because we do not keep unnecessary logs in final code.
+
+Step 7: Understand Redux action naming
+
+In our slice:
+
+name: "cart"
+
+And reducer:
+
+addToCart
+
+Redux Toolkit automatically creates action type:
+
+cart/addToCart
+
+So the pattern is:
+
+sliceName/reducerName
+
+Examples:
+
+cart/addToCart
+cart/increaseQuantity
+cart/decreaseQuantity
+cart/removeFromCart
+cart/clearCart
+Step 8: Understand previous state and next state
+
+Redux DevTools usually shows different views like:
+
+Action
+State
+Diff
+Trace
+
+Focus mainly on:
+
+Action
+
+Shows what was dispatched.
+
+Example:
+
+{
+  type: "cart/addToCart",
+  payload: {
+    id: 1,
+    name: "Wireless Headphones",
+    price: 2499
+  }
+}
+State
+
+Shows Redux state after the action.
+
+Diff
+
+Shows exactly what changed.
+
+Example:
+
+totalQuantity: 0 → 1
+totalAmount: 0 → 2499
+cartItems: [] → [{...}]
+
+This is very helpful for debugging.
+
+Step 9: Debugging example
+
+Suppose cart total is wrong.
+
+You should debug in this order:
+
+1. Check whether button click is working
+2. Check whether dispatch is running
+3. Check Redux DevTools action
+4. Check action payload
+5. Check reducer logic
+6. Check updated state
+7. Check useSelector in component
+
+Example:
+
+If you click Add to Cart but cart does not update:
+
+First check ProductCard.jsx:
+
+dispatch(addToCart(product));
+
+Then check DevTools:
+
+Did cart/addToCart action appear?
+
+If action did not appear, problem is in component or button click.
+
+If action appeared but state did not change, problem is in reducer.
+
+If state changed but UI did not update, problem is in useSelector or component rendering.
+
+Step 10: Very important interview answer
+
+You can say:
+
+I used Redux DevTools to debug Redux state changes. Whenever a user clicks Add to Cart, I can see the dispatched action, payload, previous state, and next state. This helps confirm whether the problem is in the component, action dispatch, reducer logic, or UI selector.
+
+Mini revision
+
+You now know:
+
+useDispatch → sends action to Redux
+action.payload → data sent with action
+reducer → updates Redux state
+useSelector → reads Redux state
+Redux DevTools → shows action and state changes
+
+Complete this Redux DevTools checking in your browser and send done.
+
+Next, we will add product search and category filter. This will teach when to use local state vs Redux for filters.
+
+Now we’ll add search and category filtering, but we will not put it in Redux. This is a good practice point: filters are local UI state unless many pages need them.
+
+Thought for 10s
+
+Great. Now we will add Product Search + Category Filter.
+
+In this step, you will learn:
+
+How to use useState for search input
+How to filter products using .filter()
+Why search/filter state does not always need Redux
+How to show filtered products dynamically
+Step 1: Update product data
+
+Open:
+
+src/data/products.js
+
+Replace full code with this:
+
+export const products = [
+  {
+    id: 1,
+    name: "Wireless Headphones",
+    price: 2499,
+    category: "Electronics",
+    image: "https://via.placeholder.com/200x150?text=Headphones",
+  },
+  {
+    id: 2,
+    name: "Smart Watch",
+    price: 3999,
+    category: "Electronics",
+    image: "https://via.placeholder.com/200x150?text=Smart+Watch",
+  },
+  {
+    id: 3,
+    name: "Bluetooth Speaker",
+    price: 1999,
+    category: "Electronics",
+    image: "https://via.placeholder.com/200x150?text=Speaker",
+  },
+  {
+    id: 4,
+    name: "Laptop Bag",
+    price: 999,
+    category: "Accessories",
+    image: "https://via.placeholder.com/200x150?text=Laptop+Bag",
+  },
+  {
+    id: 5,
+    name: "Running Shoes",
+    price: 2999,
+    category: "Fashion",
+    image: "https://via.placeholder.com/200x150?text=Shoes",
+  },
+  {
+    id: 6,
+    name: "Cotton T-Shirt",
+    price: 699,
+    category: "Fashion",
+    image: "https://via.placeholder.com/200x150?text=T-Shirt",
+  },
+];
+
+We added a new field:
+
+category: "Electronics"
+
+Now we can filter products by category.
+
+Step 2: Update ProductCard.jsx
+
+Open:
+
+src/components/ProductCard.jsx
+
+Replace full code with this:
+
+import { useDispatch } from "react-redux";
+import { addToCart } from "../features/cart/cartSlice";
+
+function ProductCard({ product }) {
+  const dispatch = useDispatch();
+
+  const handleAddToCart = () => {
+    dispatch(addToCart(product));
+  };
+
+  return (
+    <div className="product-card">
+      <img src={product.image} alt={product.name} />
+
+      <h3>{product.name}</h3>
+
+      <p className="product-category">{product.category}</p>
+
+      <p>Rs. {product.price}</p>
+
+      <button onClick={handleAddToCart}>Add to Cart</button>
+    </div>
+  );
+}
+
+export default ProductCard;
+
+We added this line:
+
+<p className="product-category">{product.category}</p>
+
+So now each product card will show its category.
+
+Step 3: Update ProductList.jsx
+
+Open:
+
+src/components/ProductList.jsx
+
+Replace full code with this:
+
+import { useState } from "react";
+import { products } from "../data/products";
+import ProductCard from "./ProductCard";
+
+function ProductList() {
+  const [searchText, setSearchText] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("All");
+
+  const categories = ["All", "Electronics", "Accessories", "Fashion"];
+
+  const filteredProducts = products.filter((product) => {
+    const matchesSearch = product.name
+      .toLowerCase()
+      .includes(searchText.toLowerCase());
+
+    const matchesCategory =
+      selectedCategory === "All" || product.category === selectedCategory;
+
+    return matchesSearch && matchesCategory;
+  });
+
+  return (
+    <div>
+      <div className="products-header">
+        <h2>Products</h2>
+
+        <div className="filters">
+          <input
+            type="text"
+            placeholder="Search products..."
+            value={searchText}
+            onChange={(event) => setSearchText(event.target.value)}
+          />
+
+          <select
+            value={selectedCategory}
+            onChange={(event) => setSelectedCategory(event.target.value)}
+          >
+            {categories.map((category) => (
+              <option key={category} value={category}>
+                {category}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
+
+      {filteredProducts.length === 0 ? (
+        <p>No products found.</p>
+      ) : (
+        <div className="product-grid">
+          {filteredProducts.map((product) => (
+            <ProductCard key={product.id} product={product} />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+export default ProductList;
+Step 4: Understand the state
+
+We added two local states:
+
+const [searchText, setSearchText] = useState("");
+const [selectedCategory, setSelectedCategory] = useState("All");
+
+searchText stores what user types in search box.
+
+Example:
+
+watch
+
+selectedCategory stores selected category.
+
+Example:
+
+Electronics
+Step 5: Understand filtering logic
+
+This part checks product name:
+
+const matchesSearch = product.name
+  .toLowerCase()
+  .includes(searchText.toLowerCase());
+
+Meaning:
+
+Convert product name and search text to lowercase, then check whether product name includes the search text.
+
+Example:
+
+Product name: Smart Watch
+Search text: watch
+Result: true
+
+This part checks category:
+
+const matchesCategory =
+  selectedCategory === "All" || product.category === selectedCategory;
+
+Meaning:
+
+If selected category is All, show all products.
+Otherwise, show only products matching selected category.
+
+This line applies both conditions:
+
+return matchesSearch && matchesCategory;
+
+Meaning:
+
+Product should match search text and selected category both.
+
+Step 6: Add CSS
+
+Open:
+
+src/index.css
+
+Add this at the bottom:
+
+.products-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  gap: 20px;
+}
+
+.filters {
+  display: flex;
+  gap: 12px;
+}
+
+.filters input,
+.filters select {
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-family: Arial, sans-serif;
+}
+
+.filters input {
+  width: 220px;
+}
+
+.product-category {
+  color: #666;
+  font-size: 14px;
+  margin: 4px 0;
+}
+Step 7: Test the feature
+
+Run:
+
+npm run dev
+
+Now test:
+
+Search watch
+Only Smart Watch should show
+Search speaker
+Only Bluetooth Speaker should show
+Select Fashion
+Only fashion products should show
+Select Electronics
+Only electronics products should show
+Search something wrong like abcxyz
+It should show No products found.
+Important concept: why not Redux here?
+
+We used Redux for cart because cart data is needed in many places:
+
+Navbar
+Cart Page
+Checkout Page
+Products Page
+
+But search text and selected category are only needed inside the product listing area.
+
+So we used local state:
+
+useState
+
+This is better than putting everything into Redux.
+
+A common beginner mistake is:
+
+Putting every state into Redux.
+
+That is not required.
+
+A better rule:
+
+State	Use
+Needed by many components/pages	Redux
+Needed only in one component	useState
+Temporary UI input/filter	useState
+Logged-in user/cart/theme	Redux or Context
+API data shared across app	Redux Toolkit / RTK Query
+Interview answer
+
+You can explain it like this:
+
+I used local state for product search and category filter because these values are only required inside the product listing component. I did not put them in Redux because they are not global state. Redux is used only for cart state, which is shared between Navbar, Cart page, and Checkout page.
+
+Complete this step and send done. Next, we will add price sorting: Low to High and High to Low, and then we will refactor product filtering into cleaner logic.
