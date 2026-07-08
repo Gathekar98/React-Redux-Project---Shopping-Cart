@@ -3198,3 +3198,251 @@ You can explain it like this:
 I used local state for product search and category filter because these values are only required inside the product listing component. I did not put them in Redux because they are not global state. Redux is used only for cart state, which is shared between Navbar, Cart page, and Checkout page.
 
 Complete this step and send done. Next, we will add price sorting: Low to High and High to Low, and then we will refactor product filtering into cleaner logic.
+Good. Now we’ll add price sorting and clean the product filtering logic, so the component looks more professional and easier to maintain.
+
+Thought for 11s
+
+Now we will add Price Sorting.
+
+We will add three options:
+
+Default
+Price: Low to High
+Price: High to Low
+
+This will teach you:
+
+How to sort products
+How to combine search + category + sorting
+Why we should not mutate original arrays directly
+How to keep component logic clean
+Step 1: Update ProductList.jsx
+
+Open:
+
+src/components/ProductList.jsx
+
+Replace the full code with this:
+
+import { useState } from "react";
+import { products } from "../data/products";
+import ProductCard from "./ProductCard";
+
+function ProductList() {
+  const [searchText, setSearchText] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("All");
+  const [sortOrder, setSortOrder] = useState("default");
+
+  const categories = ["All", "Electronics", "Accessories", "Fashion"];
+
+  const getFilteredProducts = () => {
+    let updatedProducts = [...products];
+
+    if (searchText.trim() !== "") {
+      updatedProducts = updatedProducts.filter((product) =>
+        product.name.toLowerCase().includes(searchText.toLowerCase())
+      );
+    }
+
+    if (selectedCategory !== "All") {
+      updatedProducts = updatedProducts.filter(
+        (product) => product.category === selectedCategory
+      );
+    }
+
+    if (sortOrder === "low-to-high") {
+      updatedProducts.sort((a, b) => a.price - b.price);
+    }
+
+    if (sortOrder === "high-to-low") {
+      updatedProducts.sort((a, b) => b.price - a.price);
+    }
+
+    return updatedProducts;
+  };
+
+  const filteredProducts = getFilteredProducts();
+
+  return (
+    <div>
+      <div className="products-header">
+        <h2>Products</h2>
+
+        <div className="filters">
+          <input
+            type="text"
+            placeholder="Search products..."
+            value={searchText}
+            onChange={(event) => setSearchText(event.target.value)}
+          />
+
+          <select
+            value={selectedCategory}
+            onChange={(event) => setSelectedCategory(event.target.value)}
+          >
+            {categories.map((category) => (
+              <option key={category} value={category}>
+                {category}
+              </option>
+            ))}
+          </select>
+
+          <select
+            value={sortOrder}
+            onChange={(event) => setSortOrder(event.target.value)}
+          >
+            <option value="default">Default</option>
+            <option value="low-to-high">Price: Low to High</option>
+            <option value="high-to-low">Price: High to Low</option>
+          </select>
+        </div>
+      </div>
+
+      {filteredProducts.length === 0 ? (
+        <p>No products found.</p>
+      ) : (
+        <div className="product-grid">
+          {filteredProducts.map((product) => (
+            <ProductCard key={product.id} product={product} />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+export default ProductList;
+Step 2: Understand new state
+
+We added one more local state:
+
+const [sortOrder, setSortOrder] = useState("default");
+
+This stores the selected sorting option.
+
+Example:
+
+low-to-high
+
+or:
+
+high-to-low
+
+Again, we are using useState, not Redux.
+
+Why?
+
+Because sorting is only needed inside the product list.
+
+Step 3: Understand this important line
+let updatedProducts = [...products];
+
+This creates a copy of the products array.
+
+Why do we copy?
+
+Because JavaScript .sort() changes the original array.
+
+This is called mutation.
+
+Bad approach:
+
+products.sort((a, b) => a.price - b.price);
+
+This directly changes the original products array.
+
+Better approach:
+
+let updatedProducts = [...products];
+updatedProducts.sort((a, b) => a.price - b.price);
+
+Now we are sorting the copied array, not the original array.
+
+This is a very important React habit.
+
+Step 4: Understand filtering logic
+
+First, we start with all products:
+
+let updatedProducts = [...products];
+
+Then search filter:
+
+if (searchText.trim() !== "") {
+  updatedProducts = updatedProducts.filter((product) =>
+    product.name.toLowerCase().includes(searchText.toLowerCase())
+  );
+}
+
+Then category filter:
+
+if (selectedCategory !== "All") {
+  updatedProducts = updatedProducts.filter(
+    (product) => product.category === selectedCategory
+  );
+}
+
+Then sorting:
+
+if (sortOrder === "low-to-high") {
+  updatedProducts.sort((a, b) => a.price - b.price);
+}
+
+and:
+
+if (sortOrder === "high-to-low") {
+  updatedProducts.sort((a, b) => b.price - a.price);
+}
+
+Finally:
+
+return updatedProducts;
+
+So the flow is:
+
+All products
+   ↓
+Apply search
+   ↓
+Apply category
+   ↓
+Apply sorting
+   ↓
+Show final products
+Step 5: Test it
+
+Run your project:
+
+npm run dev
+
+Now test:
+
+Select Price: Low to High
+Products should show cheapest first
+Select Price: High to Low
+Products should show expensive first
+Select Fashion
+Sorting should work only inside Fashion products
+Search watch
+Only Smart Watch should show
+Clear search
+Products should come back
+Step 6: Interview explanation
+
+You can explain it like this:
+
+I added product search, category filter, and price sorting using local state because these are UI-level states required only inside the product listing component. I first copied the products array using the spread operator, then applied search filter, category filter, and sorting. I avoided sorting the original product array directly because .sort() mutates the array.
+
+What you learned
+
+You now understand this important React concept:
+
+Do not mutate original data directly.
+Create a copy, then filter or sort.
+
+You also learned:
+
+Global cart state → Redux
+Local search/filter/sort state → useState
+
+Complete this step and send done. Next, we will add quantity selection before Add to Cart, which is closer to real e-commerce apps.

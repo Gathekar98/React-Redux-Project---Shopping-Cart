@@ -13,7 +13,7 @@ function ProductCard({ product }) {
         <div className="product-card">
             <img src={product.image} alt={product.name} />
             <h3>{product.name}</h3>
-            <p className="product-category">{product}</p>
+            <p className="product-category">{product.category}</p>
             <p>Rs.{product.price}</p>
             <button onClick={handleAddToCart}>Add to Cart</button>
         </div>

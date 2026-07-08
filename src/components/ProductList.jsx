@@ -9,21 +9,37 @@ function ProductList() {
     // selectedCategory stores selected category.
     const [selectedCategory, setSelectedCategory] = useState("All");
 
+    // This stores the selected sorting option.
+    const [sortOrder, setSortOrder] = useState("default");
+
     const categories = ["All", "Electronics", "Acessories", "Fashion"];
 
-    const filteredProducts = products.filter((product) => {
-        // Convert product name and search text to lowercase, then check whether product name includes the search text.
-        const matchesSearch = product.name
-        .toLowerCase()
-        .includes(searchText.toLowerCase());
+    const getFilteredProducts = () => {
+        // This creates a copy of the products array. Now we are sorting the copied array, not the original array.
+        let updatedProducts = [...products];
 
-        // This part checks category: If selected category is All, show all products. Otherwise, show only products matching selected category.
-        const matchesCategories = selectedCategory === "All" || product.category === selectedCategory;
+        if(searchText.trim() !== ""){
+            updatedProducts = updatedProducts.filter((product) => 
+                product.name.toLowerCase().includes(searchText.toLowerCase())
+            );
+        }
+        
+        if(selectedCategory !== "All"){
+            updatedProducts = updatedProducts.filter((product) => product.category === selectedCategory);
+        }
 
-        // Product should match search text and selected category both.
-        return matchesCategories && matchesSearch;
+        if(sortOrder === "low-to-high"){
+            updatedProducts.sort((a, b) => a.price - b.price);
+        }
 
-    })
+        if(sortOrder === "high-to-low"){
+            updatedProducts.sort((a, b) => b.price - a.price);
+        }
+        return updatedProducts;
+
+    }
+
+   const filteredProducts = getFilteredProducts();
 
     return(
         <div>
@@ -44,6 +60,15 @@ function ProductList() {
                             {category}
                         </option>
                     ))}
+                </select>
+
+                <select
+                    value={sortOrder}
+                    onChange={(event) => setSortOrder(event.target.value)}
+                >
+                    <option value="default">Default</option>
+                    <option value="low-to-high">Price: Low to High</option>
+                    <option value="high-to-low">Price: High to Low</option>
                 </select>
             </div>
 
