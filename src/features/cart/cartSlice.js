@@ -24,10 +24,9 @@ const cartSlice = createSlice({
     initialState,
     reducers: {
         addToCart: (state, action)=> {
-            // console.log("Action received:", action);
-            // console.log("Product payload:", action.type);
-            // console.log("Product payload:", action.payload);
             const product = action.payload; //This action receives a product
+
+            const quantityToAdd = product.quantity || 1;
 
             //Then we check whether the product is already inside the cart:-
             const existingItem = state.cartItems.find(
@@ -36,7 +35,7 @@ const cartSlice = createSlice({
 
             // If product already exists
             if(existingItem) {
-                existingItem.quantity += 1; //we increase quantity:
+                existingItem.quantity += quantityToAdd; //we increase quantity:
             }
             // If product does not exist
             else{
@@ -46,7 +45,7 @@ const cartSlice = createSlice({
                     name : product.name,
                     price : product.price,
                     image : product.image,
-                    quantity : 1,
+                    quantity : quantityToAdd,
                 });
             }
             // Then we update total cart values:

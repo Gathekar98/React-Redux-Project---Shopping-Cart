@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useDispatch } from "react-redux";
 import { addToCart } from "../features/cart/cartSlice";
 
@@ -5,8 +6,26 @@ function ProductCard({ product }) {
 
     const dispatch = useDispatch(); //This line gives us access to Redux dispatch: Send an instruction to Redux
 
+    // This quantity is only needed inside one product card.
+    const [selectedQuantity, setSelectedQuantity] = useState(1);
+
+    const increaseSelectedQuantity = () => {
+        setSelectedQuantity(selectedQuantity + 1);
+    };
+
+    const decreaseSelectedQuantity = () => {
+        if(selectedQuantity > 1){
+            setSelectedQuantity(selectedQuantity - 1);
+        }
+    };
+
     const handleAddToCart = () => {
-        dispatch(addToCart(product)); //This line sends the selected product to Redux:
+        dispatch(addToCart({
+                ...product, //Take all product details.
+                quantity : selectedQuantity, //add selected quantity also.
+            }) //send everything to redux.
+        ); //This line sends the selected product to Redux:
+        setSelectedQuantity(1);
     };
 
     return(
@@ -15,6 +34,11 @@ function ProductCard({ product }) {
             <h3>{product.name}</h3>
             <p className="product-category">{product.category}</p>
             <p>Rs.{product.price}</p>
+            <div className="product-quantity">
+                <button onClick={decreaseSelectedQuantity}>-</button>
+                <span>{selectedQuantity}</span>
+                <button onClick={increaseSelectedQuantity}>+</button>
+            </div>
             <button onClick={handleAddToCart}>Add to Cart</button>
         </div>
     );

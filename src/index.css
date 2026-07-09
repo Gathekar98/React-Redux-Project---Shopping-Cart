@@ -323,3 +323,25 @@ body {
   font-size: 14px;
   margin: 4px 0;
 }
+
+.product-quantity {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 12px;
+  margin: 12px 0;
+}
+
+.product-quantity button {
+  width: 28px;
+  height: 28px;
+  border: none;
+  background-color: #222;
+  color: white;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.product-quantity span {
+  font-weight: bold;
+}

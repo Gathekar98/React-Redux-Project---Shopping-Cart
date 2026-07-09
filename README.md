@@ -3446,3 +3446,398 @@ Global cart state → Redux
 Local search/filter/sort state → useState
 
 Complete this step and send done. Next, we will add quantity selection before Add to Cart, which is closer to real e-commerce apps.
+Next we’ll add quantity selection on each product card. The selected quantity is temporary UI state, so we’ll keep it inside ProductCard, not Redux.
+
+Thought for 8s
+
+Great. Now we will add quantity selection before Add to Cart.
+
+Currently, when you click Add to Cart, it always adds only 1 quantity.
+
+Now we will allow the user to select quantity first:
+
+Wireless Headphones
+Quantity: - 2 +
+Add to Cart
+
+Then if the user clicks Add to Cart, quantity 2 will be added to Redux.
+
+Step 1: Update cartSlice.js
+
+Open:
+
+src/features/cart/cartSlice.js
+
+Replace only your addToCart reducer with this updated version:
+
+addToCart: (state, action) => {
+  const product = action.payload;
+
+  const quantityToAdd = product.quantity || 1;
+
+  const existingItem = state.cartItems.find(
+    (item) => item.id === product.id
+  );
+
+  if (existingItem) {
+    existingItem.quantity += quantityToAdd;
+  } else {
+    state.cartItems.push({
+      id: product.id,
+      name: product.name,
+      price: product.price,
+      image: product.image,
+      category: product.category,
+      quantity: quantityToAdd,
+    });
+  }
+
+  calculateTotals(state);
+},
+
+Your full cartSlice.js should look like this:
+
+import { createSlice } from "@reduxjs/toolkit";
+
+const initialState = {
+  cartItems: [],
+  totalQuantity: 0,
+  totalAmount: 0,
+};
+
+const calculateTotals = (state) => {
+  let totalQuantity = 0;
+  let totalAmount = 0;
+
+  state.cartItems.forEach((item) => {
+    totalQuantity += item.quantity;
+    totalAmount += item.price * item.quantity;
+  });
+
+  state.totalQuantity = totalQuantity;
+  state.totalAmount = totalAmount;
+};
+
+const cartSlice = createSlice({
+  name: "cart",
+  initialState,
+  reducers: {
+    addToCart: (state, action) => {
+      const product = action.payload;
+
+      const quantityToAdd = product.quantity || 1;
+
+      const existingItem = state.cartItems.find(
+        (item) => item.id === product.id
+      );
+
+      if (existingItem) {
+        existingItem.quantity += quantityToAdd;
+      } else {
+        state.cartItems.push({
+          id: product.id,
+          name: product.name,
+          price: product.price,
+          image: product.image,
+          category: product.category,
+          quantity: quantityToAdd,
+        });
+      }
+
+      calculateTotals(state);
+    },
+
+    increaseQuantity: (state, action) => {
+      const id = action.payload;
+
+      const existingItem = state.cartItems.find((item) => item.id === id);
+
+      if (existingItem) {
+        existingItem.quantity += 1;
+      }
+
+      calculateTotals(state);
+    },
+
+    decreaseQuantity: (state, action) => {
+      const id = action.payload;
+
+      const existingItem = state.cartItems.find((item) => item.id === id);
+
+      if (existingItem) {
+        if (existingItem.quantity === 1) {
+          state.cartItems = state.cartItems.filter((item) => item.id !== id);
+        } else {
+          existingItem.quantity -= 1;
+        }
+      }
+
+      calculateTotals(state);
+    },
+
+    removeFromCart: (state, action) => {
+      const id = action.payload;
+
+      state.cartItems = state.cartItems.filter((item) => item.id !== id);
+
+      calculateTotals(state);
+    },
+
+    clearCart: (state) => {
+      state.cartItems = [];
+      state.totalQuantity = 0;
+      state.totalAmount = 0;
+    },
+  },
+});
+
+export const {
+  addToCart,
+  increaseQuantity,
+  decreaseQuantity,
+  removeFromCart,
+  clearCart,
+} = cartSlice.actions;
+
+export default cartSlice.reducer;
+Step 2: Understand the Redux change
+
+Earlier, product object was coming like this:
+
+{
+  id: 1,
+  name: "Wireless Headphones",
+  price: 2499
+}
+
+Now we will send product with quantity:
+
+{
+  id: 1,
+  name: "Wireless Headphones",
+  price: 2499,
+  quantity: 2
+}
+
+So we added this line:
+
+const quantityToAdd = product.quantity || 1;
+
+Meaning:
+
+If product.quantity exists, use that.
+Otherwise, use 1.
+
+This keeps our reducer safe.
+
+Step 3: Update ProductCard.jsx
+
+Open:
+
+src/components/ProductCard.jsx
+
+Replace full code with this:
+
+import { useState } from "react";
+import { useDispatch } from "react-redux";
+import { addToCart } from "../features/cart/cartSlice";
+
+function ProductCard({ product }) {
+  const dispatch = useDispatch();
+
+  const [selectedQuantity, setSelectedQuantity] = useState(1);
+
+  const increaseSelectedQuantity = () => {
+    setSelectedQuantity(selectedQuantity + 1);
+  };
+
+  const decreaseSelectedQuantity = () => {
+    if (selectedQuantity > 1) {
+      setSelectedQuantity(selectedQuantity - 1);
+    }
+  };
+
+  const handleAddToCart = () => {
+    dispatch(
+      addToCart({
+        ...product,
+        quantity: selectedQuantity,
+      })
+    );
+
+    setSelectedQuantity(1);
+  };
+
+  return (
+    <div className="product-card">
+      <img src={product.image} alt={product.name} />
+
+      <h3>{product.name}</h3>
+
+      <p className="product-category">{product.category}</p>
+
+      <p>Rs. {product.price}</p>
+
+      <div className="product-quantity">
+        <button onClick={decreaseSelectedQuantity}>-</button>
+
+        <span>{selectedQuantity}</span>
+
+        <button onClick={increaseSelectedQuantity}>+</button>
+      </div>
+
+      <button onClick={handleAddToCart}>Add to Cart</button>
+    </div>
+  );
+}
+
+export default ProductCard;
+Step 4: Understand selectedQuantity
+
+We added local state:
+
+const [selectedQuantity, setSelectedQuantity] = useState(1);
+
+This quantity is only needed inside one product card.
+
+So we do not use Redux for this.
+
+Why?
+
+Because before adding to cart, this is only temporary UI state.
+
+Redux is needed after the product is added to cart.
+
+Step 5: Understand increase and decrease
+
+This increases selected quantity:
+
+const increaseSelectedQuantity = () => {
+  setSelectedQuantity(selectedQuantity + 1);
+};
+
+This decreases selected quantity:
+
+const decreaseSelectedQuantity = () => {
+  if (selectedQuantity > 1) {
+    setSelectedQuantity(selectedQuantity - 1);
+  }
+};
+
+We added this condition:
+
+if (selectedQuantity > 1)
+
+Because quantity should not become 0 or negative.
+
+Step 6: Understand Add to Cart
+
+This is the most important part:
+
+dispatch(
+  addToCart({
+    ...product,
+    quantity: selectedQuantity,
+  })
+);
+
+Meaning:
+
+Take all product details.
+Add selected quantity also.
+Send everything to Redux.
+
+Example:
+
+{
+  id: 1,
+  name: "Wireless Headphones",
+  price: 2499,
+  category: "Electronics",
+  quantity: 3
+}
+
+Then Redux receives this as:
+
+action.payload
+
+After adding, we reset quantity back to 1:
+
+setSelectedQuantity(1);
+
+This gives a better user experience.
+
+Step 7: Add CSS
+
+Open:
+
+src/index.css
+
+Add this at the bottom:
+
+.product-quantity {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 12px;
+  margin: 12px 0;
+}
+
+.product-quantity button {
+  width: 28px;
+  height: 28px;
+  border: none;
+  background-color: #222;
+  color: white;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.product-quantity span {
+  font-weight: bold;
+}
+Step 8: Test it
+
+Run:
+
+npm run dev
+
+Now test:
+
+Go to Products page
+Increase quantity of Wireless Headphones to 3
+Click Add to Cart
+Navbar should show Total Items: 3
+Go to Cart page
+Wireless Headphones quantity should be 3
+Add same product again with quantity 2
+Cart quantity should become 5
+Total amount should update correctly
+Important concept
+
+Now our flow is:
+
+ProductCard local state
+      ↓
+selectedQuantity
+      ↓
+dispatch(addToCart({ ...product, quantity }))
+      ↓
+Redux cart state
+      ↓
+Navbar and Cart page update
+
+So this is the correct state split:
+
+State	Where we keep it	Reason
+Selected quantity before adding	useState	Temporary product-card UI state
+Cart quantity after adding	Redux	Needed globally
+Cart total amount	Redux	Needed globally
+Search/filter/sort	useState	Needed only in product list
+Interview answer
+
+You can explain it like this:
+
+I used local state for selected product quantity before adding to cart, because it is temporary UI state inside each product card. Once the user clicks Add to Cart, I dispatch the product with selected quantity to Redux. After that, cart quantity and total amount are managed globally in Redux.
+
+Complete this step and send done. Next, we will add toast notifications, so the user gets feedback like “Product added to cart.”
