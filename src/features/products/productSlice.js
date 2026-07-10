@@ -53,7 +53,7 @@ const productSlice = createSlice({
                 state.isLoading = false;
                 state.products = action.payload;
             })
-            .addCase(fetchProducts.rejected, (state) => { //API call failed
+            .addCase(fetchProducts.rejected, (state, action) => { //API call failed
                 state.isLoading = false;
                 state.error =  action.error.message;
             });

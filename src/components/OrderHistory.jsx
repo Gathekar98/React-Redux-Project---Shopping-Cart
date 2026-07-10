@@ -1,6 +1,7 @@
 import { useDispatch, useSelector } from "react-redux";
 import { clearOrder } from "../features/orders/orderSlice";
 import { showNotification } from "../features/notification/notificationSlice";
+import { formatPrice } from "../utils/formatPrice";
 
 function OrderHistory() {
     const dispatch = useDispatch();
@@ -35,7 +36,7 @@ function OrderHistory() {
                                         <p>Order Date: {order.orderDate}</p>
                                     </div>
                                     <div>
-                                        <strong>Total Order Amount: Rs.{order.totalAmount}</strong>
+                                        <strong>Total Order Amount: {formatPrice(order.totalAmount)}</strong>
                                     </div>
                                 </div>
 
@@ -48,7 +49,7 @@ function OrderHistory() {
 
                                 <div className="order-total">
                                     <p>Total Quantity : {order.totalQuantity}</p>
-                                    <p>Total Amount : {order.totalAmount}</p>
+                                    <p>Total Amount : {formatPrice(order.totalAmount)}</p>
                                 </div>
                             </div>
                         ))}

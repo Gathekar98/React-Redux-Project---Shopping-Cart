@@ -17,12 +17,18 @@ function ProductList() {
     // This stores the selected sorting option.
     const [sortOrder, setSortOrder] = useState("default");
 
-    // This code runs when ProductList loads:
+    // This code runs when ProductList loads: For initial page load.
     useEffect(() => {
         dispatch(fetchProducts());
     },[dispatch]);
 
-    const categories = ["All", "Electronics", "Acessories", "Fashion"];
+    //For manual refersh.
+    const handleRefreshProducts = () => {
+        dispatch(fetchProducts());
+    }
+    const categories = ["All",
+        ...new Set(products.map((product) => product.category).filter(Boolean)),
+    ];
 
     const getFilteredProducts = () => {
         // This creates a copy of the products array. Now we are sorting the copied array, not the original array.
@@ -51,12 +57,19 @@ function ProductList() {
 
    const filteredProducts = getFilteredProducts();
 
-   if(isLoading){
+   if(isLoading && products.length === 0){
     return <h2>Loading Products....</h2>;
    }
 
-   if(error){
-    return <h2>Error: {error}</h2>;
+   if(error && products.length === 0){
+    return (
+        <div className="api-error">
+            <h2>Failed to Load Products</h2>
+            <p>{error}</p>
+            {/* If API fails and no products are available, show retry button.*/}
+            <button onClick={handleRefreshProducts}>Retry</button>
+        </div>
+    );
    }
 
     return(
@@ -88,6 +101,15 @@ function ProductList() {
                     <option value="low-to-high">Price: Low to High</option>
                     <option value="high-to-low">Price: High to Low</option>
                 </select>
+                <button 
+                    className="refersh-btn" 
+                    onClick={handleRefreshProducts} 
+                    disabled={isLoading}
+                >
+                    {isLoading ? "Refreshing...." : "Refersh Products"}
+                </button>
+
+                {error && <p className="error-text">Could not refersh: {error}</p>}
             </div>
 
             {filteredProducts.length === 0 ? (

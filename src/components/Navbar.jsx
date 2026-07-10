@@ -1,5 +1,6 @@
 import { NavLink } from "react-router";
 import { useSelector } from "react-redux";
+import { formatPrice } from "../utils/formatPrice";
 
 function Navbar() {
     const totalQuantity = useSelector((state)=>state.cart.totalQuantity);
@@ -18,7 +19,7 @@ function Navbar() {
 
             <div className="cart-summary">
                 <p>Total Items: {totalQuantity}</p>
-                <p>Total : Rs.{totalAmount}</p>
+                <p>Total : {formatPrice(totalAmount)}</p>
             </div>
         </nav>
     );

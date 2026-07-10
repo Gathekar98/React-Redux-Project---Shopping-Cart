@@ -1,6 +1,7 @@
 import { useDispatch } from 'react-redux';
 import { increaseQuantity, decreaseQuantity, removeFromCart } from '../features/cart/cartSlice';
 import { showNotification } from '../features/notification/notificationSlice';
+import { formatPrice } from '../utils/formatPrice';
 
 function CartItem({ item }) {
     const dispatch = useDispatch();
@@ -21,8 +22,8 @@ function CartItem({ item }) {
 
             <div className="cart-item-info">
                 <h3>{item.name}</h3>
-                <p>Price: Rs.{item.price}</p>
-                <p>Total: Rs.{item.price * item.quantity}</p>
+                <p>Price: {formatPrice(item.price)}</p>
+                <p>Total: {formatPrice(item.price * item.quantity)}</p>
             </div>
 
             <div className="quantity-controls">

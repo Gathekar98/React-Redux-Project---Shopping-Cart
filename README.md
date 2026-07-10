@@ -5682,3 +5682,805 @@ Selected quantity before add	useState	Only needed in ProductCard
 Checkout form fields	useState	Only needed in CheckoutForm
 
 Complete this step and send done. Next, we will add API retry + refresh products button, which is another practical real-world feature.
+
+Great. Now we will add API Retry + Refresh Products Button.
+
+Currently, products are fetched automatically when ProductList loads.
+
+Now we will add:
+
+Refresh Products
+
+When user clicks it, API will be called again.
+
+This teaches:
+
+How to dispatch async thunk manually from a button
+How to handle API loading state during refresh
+How to show retry button when API fails
+How to make API UI more practical
+Step 1: Update ProductList.jsx
+
+Open:
+
+src/components/ProductList.jsx
+
+Replace full code with this:
+
+import { useEffect, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { fetchProducts } from "../features/products/productSlice";
+import ProductCard from "./ProductCard";
+
+function ProductList() {
+  const dispatch = useDispatch();
+
+  const { products, isLoading, error } = useSelector(
+    (state) => state.products
+  );
+
+  const [searchText, setSearchText] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("All");
+  const [sortOrder, setSortOrder] = useState("default");
+
+  useEffect(() => {
+    dispatch(fetchProducts());
+  }, [dispatch]);
+
+  const handleRefreshProducts = () => {
+    dispatch(fetchProducts());
+  };
+
+  const categories = [
+    "All",
+    ...new Set(products.map((product) => product.category)),
+  ];
+
+  const getFilteredProducts = () => {
+    let updatedProducts = [...products];
+
+    if (searchText.trim() !== "") {
+      updatedProducts = updatedProducts.filter((product) =>
+        product.name.toLowerCase().includes(searchText.toLowerCase())
+      );
+    }
+
+    if (selectedCategory !== "All") {
+      updatedProducts = updatedProducts.filter(
+        (product) => product.category === selectedCategory
+      );
+    }
+
+    if (sortOrder === "low-to-high") {
+      updatedProducts.sort((a, b) => a.price - b.price);
+    }
+
+    if (sortOrder === "high-to-low") {
+      updatedProducts.sort((a, b) => b.price - a.price);
+    }
+
+    return updatedProducts;
+  };
+
+  const filteredProducts = getFilteredProducts();
+
+  if (isLoading && products.length === 0) {
+    return <h2>Loading products...</h2>;
+  }
+
+  if (error && products.length === 0) {
+    return (
+      <div className="api-error">
+        <h2>Failed to load products</h2>
+        <p>{error}</p>
+
+        <button onClick={handleRefreshProducts}>Retry</button>
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <div className="products-header">
+        <h2>Products</h2>
+
+        <div className="filters">
+          <input
+            type="text"
+            placeholder="Search products..."
+            value={searchText}
+            onChange={(event) => setSearchText(event.target.value)}
+          />
+
+          <select
+            value={selectedCategory}
+            onChange={(event) => setSelectedCategory(event.target.value)}
+          >
+            {categories.map((category) => (
+              <option key={category} value={category}>
+                {category}
+              </option>
+            ))}
+          </select>
+
+          <select
+            value={sortOrder}
+            onChange={(event) => setSortOrder(event.target.value)}
+          >
+            <option value="default">Default</option>
+            <option value="low-to-high">Price: Low to High</option>
+            <option value="high-to-low">Price: High to Low</option>
+          </select>
+
+          <button
+            className="refresh-btn"
+            onClick={handleRefreshProducts}
+            disabled={isLoading}
+          >
+            {isLoading ? "Refreshing..." : "Refresh Products"}
+          </button>
+        </div>
+      </div>
+
+      {error && <p className="error-text">Could not refresh: {error}</p>}
+
+      {filteredProducts.length === 0 ? (
+        <p>No products found.</p>
+      ) : (
+        <div className="product-grid">
+          {filteredProducts.map((product) => (
+            <ProductCard key={product.id} product={product} />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+export default ProductList;
+Step 2: Understand the refresh function
+
+We added this function:
+
+const handleRefreshProducts = () => {
+  dispatch(fetchProducts());
+};
+
+This means:
+
+User clicks Refresh Products
+        ↓
+dispatch(fetchProducts())
+        ↓
+products/fetchProducts/pending
+        ↓
+products/fetchProducts/fulfilled or rejected
+
+So the same async thunk can be used in two places:
+
+useEffect(() => {
+  dispatch(fetchProducts());
+}, [dispatch]);
+
+For initial page load.
+
+And:
+
+const handleRefreshProducts = () => {
+  dispatch(fetchProducts());
+};
+
+For manual refresh.
+
+Step 3: Understand this loading condition
+
+Earlier we had:
+
+if (isLoading) {
+  return <h2>Loading products...</h2>;
+}
+
+Now we changed it to:
+
+if (isLoading && products.length === 0) {
+  return <h2>Loading products...</h2>;
+}
+
+Why?
+
+Because when products are already visible and user clicks refresh, we do not want to hide the full product list.
+
+Instead, we show button text:
+
+Refreshing...
+
+This gives a smoother user experience.
+
+Step 4: Understand this retry condition
+
+We added:
+
+if (error && products.length === 0) {
+  return (
+    <div className="api-error">
+      <h2>Failed to load products</h2>
+      <p>{error}</p>
+
+      <button onClick={handleRefreshProducts}>Retry</button>
+    </div>
+  );
+}
+
+Meaning:
+
+If API fails and no products are available,
+show retry button.
+
+But if products are already available and refresh fails, we do not remove existing products.
+
+Instead, we show this small message:
+
+{error && <p className="error-text">Could not refresh: {error}</p>}
+
+This is better UX.
+
+Step 5: Add CSS
+
+Open:
+
+src/index.css
+
+Add this at the bottom:
+
+.refresh-btn {
+  background-color: #0066cc;
+  color: white;
+  border: none;
+  padding: 10px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+.refresh-btn:hover {
+  background-color: #004f9e;
+}
+
+.refresh-btn:disabled {
+  background-color: #999;
+  cursor: not-allowed;
+}
+
+.api-error {
+  background-color: white;
+  padding: 24px;
+  border-radius: 8px;
+  text-align: center;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.api-error button {
+  background-color: #0066cc;
+  color: white;
+  border: none;
+  padding: 10px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+Step 6: Test refresh button
+
+Run:
+
+npm run dev
+
+Now test:
+
+Open Products page
+Products should load
+Click Refresh Products
+Button text should become Refreshing...
+Products should remain visible
+
+Redux DevTools should show:
+
+products/fetchProducts/pending
+products/fetchProducts/fulfilled
+Step 7: Test error manually
+
+To test API error, temporarily change API URL in:
+
+src/features/products/productSlice.js
+
+Change this:
+
+const response = await fetch("https://fakestoreapi.com/products");
+
+to this wrong URL:
+
+const response = await fetch("https://wrong-api-url.com/products");
+
+Now refresh the page.
+
+You should see:
+
+Failed to load products
+Retry
+
+After testing, change it back:
+
+const response = await fetch("https://fakestoreapi.com/products");
+What you learned
+
+You learned a real-world API pattern:
+
+Initial API call → useEffect
+Manual API call → button click
+Loading state → isLoading
+Error state → error
+Retry → dispatch same thunk again
+
+This is very common in React Redux apps.
+
+Interview explanation
+
+You can say:
+
+I used createAsyncThunk to fetch products from an API. The product slice handles pending, fulfilled, and rejected states. I also added a Refresh Products button that dispatches the same thunk manually. If the API fails and no products are available, I show a Retry button. If refresh fails after products are already loaded, I keep the old products visible and show a small error message.
+
+Complete this step and send done. Next, we will do a full project cleanup and interview-ready folder structure revision.
+
+Great. Now we will do project cleanup + interview-ready folder structure.
+
+Till now, we focused on learning features. Now we will improve the code structure.
+
+Current issue
+
+Our project works, but some files are becoming heavy.
+
+For example:
+
+store.js
+
+currently has:
+
+Redux store setup
+localStorage load logic
+localStorage save logic
+
+This works, but in real projects we should keep files clean.
+
+So we will move localStorage logic into a separate utility file.
+
+Final folder structure after cleanup
+
+Your src folder should look like this:
+
+src/
+  app/
+    store.js
+
+  components/
+    Cart.jsx
+    CartItem.jsx
+    CheckoutForm.jsx
+    Navbar.jsx
+    OrderHistory.jsx
+    ProductCard.jsx
+    ProductList.jsx
+    Toast.jsx
+
+  features/
+    cart/
+      cartSlice.js
+
+    notification/
+      notificationSlice.js
+
+    orders/
+      orderSlice.js
+
+    products/
+      productSlice.js
+
+  pages/
+    CartPage.jsx
+    CheckoutPage.jsx
+    OrdersPage.jsx
+    ProductsPage.jsx
+
+  utils/
+    localStorage.js
+
+  App.jsx
+  index.css
+  main.jsx
+Step 1: Create utils folder
+
+Inside src, create:
+
+src/utils
+
+Inside utils, create this file:
+
+src/utils/localStorage.js
+Step 2: Add localStorage helper functions
+
+Open:
+
+src/utils/localStorage.js
+
+Paste this code:
+
+export const loadFromLocalStorage = (key) => {
+  try {
+    const savedData = localStorage.getItem(key);
+
+    if (savedData === null) {
+      return undefined;
+    }
+
+    return JSON.parse(savedData);
+  } catch (error) {
+    console.log(`Could not load ${key} from localStorage`, error);
+    return undefined;
+  }
+};
+
+export const saveToLocalStorage = (key, data) => {
+  try {
+    const dataString = JSON.stringify(data);
+    localStorage.setItem(key, dataString);
+  } catch (error) {
+    console.log(`Could not save ${key} to localStorage`, error);
+  }
+};
+Step 3: Understand this utility file
+
+Earlier, we had separate functions:
+
+loadCartFromLocalStorage
+loadOrdersFromLocalStorage
+saveCartToLocalStorage
+saveOrdersToLocalStorage
+
+Now we made reusable functions:
+
+loadFromLocalStorage(key)
+saveToLocalStorage(key, data)
+
+So now we can use:
+
+loadFromLocalStorage("cart")
+
+and:
+
+loadFromLocalStorage("orders")
+
+Same function, different key.
+
+This is better because we avoid repeated code.
+
+Step 4: Clean store.js
+
+Open:
+
+src/app/store.js
+
+Replace full code with this:
+
+import { configureStore } from "@reduxjs/toolkit";
+import cartReducer from "../features/cart/cartSlice";
+import notificationReducer from "../features/notification/notificationSlice";
+import orderReducer from "../features/orders/orderSlice";
+import productReducer from "../features/products/productSlice";
+import {
+  loadFromLocalStorage,
+  saveToLocalStorage,
+} from "../utils/localStorage";
+
+export const store = configureStore({
+  reducer: {
+    cart: cartReducer,
+    notification: notificationReducer,
+    orders: orderReducer,
+    products: productReducer,
+  },
+  preloadedState: {
+    cart: loadFromLocalStorage("cart"),
+    orders: loadFromLocalStorage("orders"),
+  },
+});
+
+store.subscribe(() => {
+  saveToLocalStorage("cart", store.getState().cart);
+  saveToLocalStorage("orders", store.getState().orders);
+});
+
+Now store.js is much cleaner.
+
+Step 5: Understand clean store.js
+
+Now this file does only Redux store work:
+
+export const store = configureStore({
+  reducer: {
+    cart: cartReducer,
+    notification: notificationReducer,
+    orders: orderReducer,
+    products: productReducer,
+  },
+  preloadedState: {
+    cart: loadFromLocalStorage("cart"),
+    orders: loadFromLocalStorage("orders"),
+  },
+});
+
+Meaning:
+
+Create Redux store
+Add all feature reducers
+Load cart and orders from localStorage
+
+Then:
+
+store.subscribe(() => {
+  saveToLocalStorage("cart", store.getState().cart);
+  saveToLocalStorage("orders", store.getState().orders);
+});
+
+Meaning:
+
+Whenever Redux state changes,
+save cart and orders to localStorage.
+Step 6: Small cleanup in ProductList.jsx
+
+Currently, this part is inside component:
+
+const categories = [
+  "All",
+  ...new Set(products.map((product) => product.category)),
+];
+
+This is fine. But we can make it slightly safer.
+
+Replace that line with this:
+
+const categories = [
+  "All",
+  ...new Set(products.map((product) => product.category).filter(Boolean)),
+];
+
+Why?
+
+Because if any product does not have category, filter(Boolean) removes empty values.
+
+Step 7: Add fallback image handling in ProductCard.jsx
+
+Sometimes API image may fail to load.
+
+Open:
+
+src/components/ProductCard.jsx
+
+Find this:
+
+<img src={product.image} alt={product.name} />
+
+Replace with this:
+
+<img
+  src={product.image}
+  alt={product.name}
+  onError={(event) => {
+    event.target.src = "https://via.placeholder.com/200x150?text=No+Image";
+  }}
+/>
+
+This means if product image fails, show a placeholder image.
+
+Step 8: Improve price display
+
+In a real app, instead of writing:
+
+Rs. {product.price}
+
+we can format price using JavaScript.
+
+Create one more utility file:
+
+src/utils/formatPrice.js
+
+Paste this:
+
+export const formatPrice = (price) => {
+  return `Rs. ${Number(price).toLocaleString("en-IN")}`;
+};
+
+Now we can show:
+
+Rs. 2,499
+
+instead of:
+
+Rs. 2499
+Step 9: Use formatPrice in ProductCard.jsx
+
+Open:
+
+src/components/ProductCard.jsx
+
+Add this import at the top:
+
+import { formatPrice } from "../utils/formatPrice";
+
+Replace:
+
+<p>Rs. {product.price}</p>
+
+with:
+
+<p>{formatPrice(product.price)}</p>
+Step 10: Use formatPrice in CartItem.jsx
+
+Open:
+
+src/components/CartItem.jsx
+
+Add import:
+
+import { formatPrice } from "../utils/formatPrice";
+
+Replace:
+
+<p>Price: Rs. {item.price}</p>
+<p>Total: Rs. {item.price * item.quantity}</p>
+
+with:
+
+<p>Price: {formatPrice(item.price)}</p>
+<p>Total: {formatPrice(item.price * item.quantity)}</p>
+Step 11: Use formatPrice in Cart.jsx
+
+Open:
+
+src/components/Cart.jsx
+
+Add import:
+
+import { formatPrice } from "../utils/formatPrice";
+
+Replace:
+
+<p>Total Amount: Rs. {totalAmount}</p>
+
+with:
+
+<p>Total Amount: {formatPrice(totalAmount)}</p>
+Step 12: Use formatPrice in Navbar.jsx
+
+Open:
+
+src/components/Navbar.jsx
+
+Add import:
+
+import { formatPrice } from "../utils/formatPrice";
+
+Replace:
+
+<span>Total: Rs. {totalAmount}</span>
+
+with:
+
+<span>Total: {formatPrice(totalAmount)}</span>
+Step 13: Use formatPrice in CheckoutForm.jsx
+
+Open:
+
+src/components/CheckoutForm.jsx
+
+Add import:
+
+import { formatPrice } from "../utils/formatPrice";
+
+Replace:
+
+<p>Total Amount: Rs. {totalAmount}</p>
+
+with:
+
+<p>Total Amount: {formatPrice(totalAmount)}</p>
+Step 14: Use formatPrice in OrderHistory.jsx
+
+Open:
+
+src/components/OrderHistory.jsx
+
+Add import:
+
+import { formatPrice } from "../utils/formatPrice";
+
+Replace:
+
+<strong>Rs. {order.totalAmount}</strong>
+
+with:
+
+<strong>{formatPrice(order.totalAmount)}</strong>
+
+Replace:
+
+<span>Rs. {item.price * item.quantity}</span>
+
+with:
+
+<span>{formatPrice(item.price * item.quantity)}</span>
+
+Replace:
+
+<p>Total Amount: Rs. {order.totalAmount}</p>
+
+with:
+
+<p>Total Amount: {formatPrice(order.totalAmount)}</p>
+Step 15: Test full app again
+
+Run:
+
+npm run dev
+
+Test these flows:
+
+1. Products load from API
+2. Search works
+3. Category filter works
+4. Sorting works
+5. Add to Cart works
+6. Toast appears
+7. Cart page works
+8. Quantity increase/decrease works
+9. Clear cart works
+10. Checkout form validation works
+11. Order gets saved
+12. Orders page works
+13. Refresh page
+14. Cart and orders persist
+What you learned in cleanup
+
+You learned how to separate responsibilities:
+
+File	Responsibility
+store.js	Configure Redux store
+localStorage.js	Save/load browser storage
+formatPrice.js	Format price display
+cartSlice.js	Cart logic
+productSlice.js	Product API logic
+orderSlice.js	Order history logic
+notificationSlice.js	Toast logic
+pages/	Route-level pages
+components/	Reusable UI parts
+Interview explanation
+
+You can explain your project like this:
+
+I structured the app feature-wise. Redux slices are kept inside the features folder, reusable UI components are kept in components, route-level components are kept in pages, and helper functions like localStorage and price formatting are kept in utils. This keeps the Redux store clean and makes the project easier to maintain.
+
+Project summary so far
+
+You have now built a proper beginner-to-intermediate Redux project with:
+
+React
+Redux Toolkit
+React Redux
+React Router
+createAsyncThunk
+localStorage persistence
+Toast notifications
+Checkout form validation
+Order history
+Search, filter, and sorting
+Reusable utility functions
+
+This is a good practice project for a React developer preparing for interviews.
+
+Send done after cleanup. Then we will do the next important step: prepare interview questions and answers based on this exact project.

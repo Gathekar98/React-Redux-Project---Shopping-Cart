@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useDispatch } from "react-redux";
 import { addToCart } from "../features/cart/cartSlice";
 import { showNotification } from "../features/notification/notificationSlice";
+import { formatPrice } from "../utils/formatPrice";
 
 function ProductCard({ product }) {
 
@@ -42,10 +43,10 @@ function ProductCard({ product }) {
 
     return(
         <div className="product-card">
-            <img src={product.image} alt={product.name} />
+            <img src={product.image} alt={product.name} onError={(event) => {event.target.src = "https://via.placeholder.com/200x150?text=No+Image";}}/>
             <h3>{product.name}</h3>
             <p className="product-category">{product.category}</p>
-            <p>Rs.{product.price}</p>
+            <p>{formatPrice(product.price)}</p>
             <div className="product-quantity">
                 <button onClick={decreaseSelectedQuantity}>-</button>
                 <span>{selectedQuantity}</span>

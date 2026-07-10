@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router';
 import CartItem from './CartItem';
 import { clearCart } from '../features/cart/cartSlice';
 import { showNotification } from '../features/notification/notificationSlice';
+import { formatPrice } from '../utils/formatPrice';
 
 function Cart() {
 
@@ -41,7 +42,7 @@ function Cart() {
                     <div className="cart-total">
                         <h3>Cart Summary</h3>
                         <p>Total Quantity: {totalQuantity}</p>
-                        <p>Total Amount: Rs.{totalAmount}</p>
+                        <p>Total Amount: {formatPrice(totalAmount)}</p>
                         <button className="checkout-btn" onClick={() => navigate("/checkout")}>
                             Proceed to Checkout
                         </button>

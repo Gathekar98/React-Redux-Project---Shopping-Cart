@@ -4,6 +4,7 @@ import { useNavigate } from "react-router";
 import { clearCart } from "../features/cart/cartSlice";
 import { addOrder } from "../features/orders/orderSlice";
 import { showNotification } from "../features/notification/notificationSlice";
+import { formatPrice } from "../utils/formatPrice";
 
 function CheckoutForm() {
 
@@ -159,7 +160,7 @@ function CheckoutForm() {
             <div className="checkout-summary">
                 <p>Total Products : {cartItems.length}</p>
                  <p>Total Quantity: {totalQuantity}</p>
-                <p>Total Amount : Rs.{totalAmount}</p>
+                <p>Total Amount : {formatPrice(totalAmount)}</p>
             </div>
 
             <form onSubmit={handleSubmit} className="checkout-form">

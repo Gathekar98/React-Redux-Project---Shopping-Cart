@@ -371,3 +371,38 @@ body {
   color: #222;
 }
           
+.refresh-btn {
+  background-color: #0066cc;
+  color: white;
+  border: none;
+  padding: 10px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+.refresh-btn:hover {
+  background-color: #004f9e;
+}
+
+.refresh-btn:disabled {
+  background-color: #999;
+  cursor: not-allowed;
+}
+
+.api-error {
+  background-color: white;
+  padding: 24px;
+  border-radius: 8px;
+  text-align: center;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.api-error button {
+  background-color: #0066cc;
+  color: white;
+  border: none;
+  padding: 10px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+}
