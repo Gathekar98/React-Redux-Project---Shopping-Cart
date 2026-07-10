@@ -2,6 +2,7 @@ import { configureStore } from '@reduxjs/toolkit';
 import cartReducer from '../features/cart/cartSlice';
 import notificationReducer from '../features/notification/notificationSlice';
 import ordersReducer from '../features/orders/orderSlice';
+import productsReducer from '../features/products/productSlice';
 
 // This function gets cart data from localStorage:
 const loadCartFromLocalStorage = () => {
@@ -65,6 +66,7 @@ export const store = configureStore({
         cart: cartReducer, //means Redux will keep cart data under:
         notification: notificationReducer, //redux will keep notification data under: notification state 
         orders: ordersReducer, //redux will keep orders data under: orders state
+        products: productsReducer, //redux will keep products data under: products state
     },
     // This part gives Redux the saved cart data when app starts:
     //preloadedState means : Initial Redux state loaded from outside source.
@@ -96,4 +98,10 @@ store.subscribe(() => {
 
 //So later we can access orders data like this:
 // state.orders.orders
+
+//So later we can access products data like this:
+// state.products.products
+// state.products.isLoading
+// state.products.error
+
 

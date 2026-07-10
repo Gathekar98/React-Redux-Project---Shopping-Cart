@@ -5199,3 +5199,486 @@ You can say:
 I created a separate order slice to store placed orders. When the user submits the checkout form, I create an order object with customer details, cart items, total quantity, total amount, and order date. Then I dispatch addOrder to save the order, dispatch clearCart to empty the cart, and dispatch showNotification to show a success message. I also persisted order history in localStorage so orders remain after refresh.
 
 Complete this step and send done. Next, we will add API product fetching using createAsyncThunk, which is one of the most important Redux Toolkit concepts for interviews.
+
+Great. Now we will add API product fetching using createAsyncThunk.
+
+Till now, products are coming from this local file:
+
+src/data/products.js
+
+Now we will fetch products from an API and store them in Redux.
+
+Redux Toolkit’s createAsyncThunk is used for async work like API calls. It automatically creates three request stages: pending, fulfilled, and rejected. The Redux Toolkit docs describe it as the standard helper for promise-based async request lifecycles.
+
+What we will build now
+
+We will create a new Redux slice:
+
+src/features/products/productSlice.js
+
+This slice will manage:
+
+{
+  products: [],
+  isLoading: false,
+  error: null
+}
+
+So now our Redux store will become:
+
+Redux Store
+ ├── cart
+ ├── notification
+ ├── orders
+ └── products
+Step 1: Create product slice
+
+Inside:
+
+src/features
+
+Create new folder:
+
+products
+
+Inside that folder, create:
+
+productSlice.js
+
+Final path:
+
+src/features/products/productSlice.js
+
+Paste this code:
+
+import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
+
+export const fetchProducts = createAsyncThunk(
+  "products/fetchProducts",
+  async () => {
+    const response = await fetch("https://fakestoreapi.com/products");
+
+    if (!response.ok) {
+      throw new Error("Failed to fetch products");
+    }
+
+    const data = await response.json();
+
+    return data.map((product) => ({
+      id: product.id,
+      name: product.title,
+      price: Math.round(product.price * 80),
+      category: product.category,
+      image: product.image,
+    }));
+  }
+);
+
+const initialState = {
+  products: [],
+  isLoading: false,
+  error: null,
+};
+
+const productSlice = createSlice({
+  name: "products",
+  initialState,
+  reducers: {},
+  extraReducers: (builder) => {
+    builder
+      .addCase(fetchProducts.pending, (state) => {
+        state.isLoading = true;
+        state.error = null;
+      })
+      .addCase(fetchProducts.fulfilled, (state, action) => {
+        state.isLoading = false;
+        state.products = action.payload;
+      })
+      .addCase(fetchProducts.rejected, (state, action) => {
+        state.isLoading = false;
+        state.error = action.error.message;
+      });
+  },
+});
+
+export default productSlice.reducer;
+Step 2: Understand createAsyncThunk
+
+This part creates the async action:
+
+export const fetchProducts = createAsyncThunk(
+  "products/fetchProducts",
+  async () => {
+    const response = await fetch("https://fakestoreapi.com/products");
+    const data = await response.json();
+    return data;
+  }
+);
+
+Simple meaning:
+
+Go to API, get products, and return the product data.
+
+Redux Toolkit automatically creates these three actions:
+
+products/fetchProducts/pending
+products/fetchProducts/fulfilled
+products/fetchProducts/rejected
+
+Meaning:
+
+Action	Meaning
+pending	API call started
+fulfilled	API call successful
+rejected	API call failed
+
+createSlice uses extraReducers to respond to these async actions from createAsyncThunk. Redux Toolkit’s extraReducers docs say it lets a slice respond to action types other than the actions generated directly by that slice.
+
+Step 3: Why we converted API data
+
+Fake Store API product looks roughly like this:
+
+{
+  id: 1,
+  title: "Fjallraven Backpack",
+  price: 109.95,
+  category: "men's clothing",
+  image: "..."
+}
+
+But our app expects:
+
+{
+  id: 1,
+  name: "Fjallraven Backpack",
+  price: 8796,
+  category: "men's clothing",
+  image: "..."
+}
+
+So we changed:
+
+name: product.title
+
+And we converted dollar-style price to approximate rupees:
+
+price: Math.round(product.price * 80)
+
+This is only for learning/demo purpose.
+
+Step 4: Update store.js
+
+Open:
+
+src/app/store.js
+
+Replace full code with this:
+
+import { configureStore } from "@reduxjs/toolkit";
+import cartReducer from "../features/cart/cartSlice";
+import notificationReducer from "../features/notification/notificationSlice";
+import orderReducer from "../features/orders/orderSlice";
+import productReducer from "../features/products/productSlice";
+
+const loadCartFromLocalStorage = () => {
+  try {
+    const savedCart = localStorage.getItem("cart");
+
+    if (savedCart === null) {
+      return undefined;
+    }
+
+    return JSON.parse(savedCart);
+  } catch (error) {
+    console.log("Could not load cart from localStorage", error);
+    return undefined;
+  }
+};
+
+const loadOrdersFromLocalStorage = () => {
+  try {
+    const savedOrders = localStorage.getItem("orders");
+
+    if (savedOrders === null) {
+      return undefined;
+    }
+
+    return JSON.parse(savedOrders);
+  } catch (error) {
+    console.log("Could not load orders from localStorage", error);
+    return undefined;
+  }
+};
+
+const saveCartToLocalStorage = (cartState) => {
+  try {
+    const cartStateString = JSON.stringify(cartState);
+    localStorage.setItem("cart", cartStateString);
+  } catch (error) {
+    console.log("Could not save cart to localStorage", error);
+  }
+};
+
+const saveOrdersToLocalStorage = (ordersState) => {
+  try {
+    const ordersStateString = JSON.stringify(ordersState);
+    localStorage.setItem("orders", ordersStateString);
+  } catch (error) {
+    console.log("Could not save orders to localStorage", error);
+  }
+};
+
+export const store = configureStore({
+  reducer: {
+    cart: cartReducer,
+    notification: notificationReducer,
+    orders: orderReducer,
+    products: productReducer,
+  },
+  preloadedState: {
+    cart: loadCartFromLocalStorage(),
+    orders: loadOrdersFromLocalStorage(),
+  },
+});
+
+store.subscribe(() => {
+  saveCartToLocalStorage(store.getState().cart);
+  saveOrdersToLocalStorage(store.getState().orders);
+});
+
+Now we added:
+
+products: productReducer,
+
+So product state will be available at:
+
+state.products
+Step 5: Update ProductList.jsx
+
+Open:
+
+src/components/ProductList.jsx
+
+Replace full code with this:
+
+import { useEffect, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { fetchProducts } from "../features/products/productSlice";
+import ProductCard from "./ProductCard";
+
+function ProductList() {
+  const dispatch = useDispatch();
+
+  const { products, isLoading, error } = useSelector(
+    (state) => state.products
+  );
+
+  const [searchText, setSearchText] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("All");
+  const [sortOrder, setSortOrder] = useState("default");
+
+  useEffect(() => {
+    dispatch(fetchProducts());
+  }, [dispatch]);
+
+  const categories = [
+    "All",
+    ...new Set(products.map((product) => product.category)),
+  ];
+
+  const getFilteredProducts = () => {
+    let updatedProducts = [...products];
+
+    if (searchText.trim() !== "") {
+      updatedProducts = updatedProducts.filter((product) =>
+        product.name.toLowerCase().includes(searchText.toLowerCase())
+      );
+    }
+
+    if (selectedCategory !== "All") {
+      updatedProducts = updatedProducts.filter(
+        (product) => product.category === selectedCategory
+      );
+    }
+
+    if (sortOrder === "low-to-high") {
+      updatedProducts.sort((a, b) => a.price - b.price);
+    }
+
+    if (sortOrder === "high-to-low") {
+      updatedProducts.sort((a, b) => b.price - a.price);
+    }
+
+    return updatedProducts;
+  };
+
+  const filteredProducts = getFilteredProducts();
+
+  if (isLoading) {
+    return <h2>Loading products...</h2>;
+  }
+
+  if (error) {
+    return <h2>Error: {error}</h2>;
+  }
+
+  return (
+    <div>
+      <div className="products-header">
+        <h2>Products</h2>
+
+        <div className="filters">
+          <input
+            type="text"
+            placeholder="Search products..."
+            value={searchText}
+            onChange={(event) => setSearchText(event.target.value)}
+          />
+
+          <select
+            value={selectedCategory}
+            onChange={(event) => setSelectedCategory(event.target.value)}
+          >
+            {categories.map((category) => (
+              <option key={category} value={category}>
+                {category}
+              </option>
+            ))}
+          </select>
+
+          <select
+            value={sortOrder}
+            onChange={(event) => setSortOrder(event.target.value)}
+          >
+            <option value="default">Default</option>
+            <option value="low-to-high">Price: Low to High</option>
+            <option value="high-to-low">Price: High to Low</option>
+          </select>
+        </div>
+      </div>
+
+      {filteredProducts.length === 0 ? (
+        <p>No products found.</p>
+      ) : (
+        <div className="product-grid">
+          {filteredProducts.map((product) => (
+            <ProductCard key={product.id} product={product} />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+export default ProductList;
+Step 6: Understand useEffect
+
+This code runs when ProductList loads:
+
+useEffect(() => {
+  dispatch(fetchProducts());
+}, [dispatch]);
+
+Meaning:
+
+ProductList appears on screen
+        ↓
+dispatch(fetchProducts())
+        ↓
+API call starts
+        ↓
+Redux state becomes loading
+        ↓
+API success/failure
+        ↓
+Redux state updates
+        ↓
+UI updates
+Step 7: Understand useSelector
+
+This reads product state from Redux:
+
+const { products, isLoading, error } = useSelector(
+  (state) => state.products
+);
+
+Because our store has:
+
+products: productReducer
+
+we can read:
+
+state.products.products
+state.products.isLoading
+state.products.error
+Step 8: Understand loading and error UI
+
+Before showing products, we added:
+
+if (isLoading) {
+  return <h2>Loading products...</h2>;
+}
+
+And:
+
+if (error) {
+  return <h2>Error: {error}</h2>;
+}
+
+This is important in real apps.
+
+Any API call should normally handle:
+
+loading state
+success state
+error state
+Step 9: Test it
+
+Run:
+
+npm run dev
+
+Now test:
+
+Open Products page
+You should briefly see Loading products...
+Products should appear from API
+Search should work
+Category filter should work
+Sorting should work
+Add to Cart should work
+Cart page should still work
+Checkout and Orders should still work
+Step 10: Check Redux DevTools
+
+Open Redux DevTools and refresh the page.
+
+You should see:
+
+products/fetchProducts/pending
+products/fetchProducts/fulfilled
+
+If API fails, you would see:
+
+products/fetchProducts/rejected
+
+This is why createAsyncThunk is important.
+
+Important interview explanation
+
+You can say:
+
+I used createAsyncThunk to fetch products from an API. It automatically generated pending, fulfilled, and rejected action states. In extraReducers, I handled loading, success, and error states. The product list reads product data from Redux using useSelector, and the API call is triggered inside useEffect using dispatch(fetchProducts()).
+
+Local state vs Redux state after this step
+Data	Where we store it	Reason
+API products	Redux	Product data may be needed across the app
+API loading/error	Redux	Related to product fetching state
+Cart items	Redux	Needed globally
+Orders	Redux	Needed in Orders page
+Toast notification	Redux	Global UI feedback
+Search/filter/sort	useState	Only needed in ProductList
+Selected quantity before add	useState	Only needed in ProductCard
+Checkout form fields	useState	Only needed in CheckoutForm
+
+Complete this step and send done. Next, we will add API retry + refresh products button, which is another practical real-world feature.

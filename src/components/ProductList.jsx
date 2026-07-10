@@ -1,16 +1,26 @@
-import { useState } from "react";
-import { products } from "../data/products";
+import { useState, useEffect } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { fetchProducts } from "../features/products/productSlice";
 import ProductCard from "./ProductCard";
 
 function ProductList() {
+
+    const dispatch = useDispatch();
+
+    // This reads product state from Redux:
+    const {products, isLoading, error } = useSelector((state) => state.products);
 
     // searchText stores what user types in search box.
     const [searchText, setSearchText] = useState("");
     // selectedCategory stores selected category.
     const [selectedCategory, setSelectedCategory] = useState("All");
-
     // This stores the selected sorting option.
     const [sortOrder, setSortOrder] = useState("default");
+
+    // This code runs when ProductList loads:
+    useEffect(() => {
+        dispatch(fetchProducts());
+    },[dispatch]);
 
     const categories = ["All", "Electronics", "Acessories", "Fashion"];
 
@@ -40,6 +50,14 @@ function ProductList() {
     }
 
    const filteredProducts = getFilteredProducts();
+
+   if(isLoading){
+    return <h2>Loading Products....</h2>;
+   }
+
+   if(error){
+    return <h2>Error: {error}</h2>;
+   }
 
     return(
         <div>
