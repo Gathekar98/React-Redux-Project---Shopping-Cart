@@ -2,15 +2,19 @@ import { useState} from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { useNavigate } from "react-router";
 import { clearCart } from "../features/cart/cartSlice";
+import { addOrder } from "../features/orders/orderSlice";
+import { showNotification } from "../features/notification/notificationSlice";
 
 function CheckoutForm() {
 
     const dispatch = useDispatch();
+
     {/* React Router’s useNavigate gives us a function to navigate programmatically */}
     const navigate = useNavigate();
 
     const cartItems = useSelector((state)=>state.cart.cartItems);
     const totalAmount = useSelector((state)=>state.cart.totalAmount);
+    const totalQuantity = useSelector((state)=>state.cart.totalQuantity);
 
     // This is local component state:
     // This data belongs only to the checkout form.
@@ -98,13 +102,32 @@ function CheckoutForm() {
         }
         // So the order will not be placed until all fields are valid.
         
-        console.log("Order Details :" ,{
-            customer : formData,
-            products : cartItems,
-            totalAmount : totalAmount,
-        });
+        const orderData = {
+            id: `ORD-${Date.now()}`, //e.g. ORD-1720000000000
+            customer: {
+                ...formData, //This stores checkout form details.
+            },
+            items: cartItems.map((item) => ({
+                ...item, //This stores checkout form details.
+            })),
+            totalAmount, //This stores the order value.
+            totalQuantity, //This stores the total quantity of items.
+            orderDate: new Date().toLocaleString(), //This stores the date and time of order.
+        };
+        dispatch(addOrder(orderData));
+
+        // console.log("Order Details :" ,{
+        //     customer : formData,
+        //     products : cartItems,
+        //     totalAmount : totalAmount,
+        // });
 
         dispatch(clearCart());
+        dispatch(showNotification({
+            message: "Order placed successfully",
+            type: "success",
+        }));
+
         setOrderSuccess(true);
 
         setFormData({
@@ -124,6 +147,7 @@ function CheckoutForm() {
                 <p>Thank you for shopping with us.</p>
                 {/* we can redirect the user after actions like empty-cart checkout or successful order. */}
                 <button onClick={()=>navigate("/")}>Continue Shopping</button>
+                <button onClick={()=>navigate("/orders")}>View Orders</button>
             </div>
         );
     }
@@ -134,6 +158,7 @@ function CheckoutForm() {
 
             <div className="checkout-summary">
                 <p>Total Products : {cartItems.length}</p>
+                 <p>Total Quantity: {totalQuantity}</p>
                 <p>Total Amount : Rs.{totalAmount}</p>
             </div>
 

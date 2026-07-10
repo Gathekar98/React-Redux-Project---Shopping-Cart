@@ -1,8 +1,19 @@
 import { useDispatch } from 'react-redux';
 import { increaseQuantity, decreaseQuantity, removeFromCart } from '../features/cart/cartSlice';
+import { showNotification } from '../features/notification/notificationSlice';
 
 function CartItem({ item }) {
     const dispatch = useDispatch();
+
+    const handleRemoveFromCart = () => {
+        dispatch(removeFromCart(item.id)); 
+
+        dispatch(showNotification({
+                message: `${item.name} removed from cart`,
+                type: "success",
+            })
+        )
+    }
     
     return(
         <div className="cart-item">
@@ -21,7 +32,7 @@ function CartItem({ item }) {
             </div>
             <button
                 className="remove-btn"
-                onClick={() => dispatch(removeFromCart(item.id))}
+                onClick={handleRemoveFromCart}
             >
                 Remove
             </button>

@@ -2,6 +2,7 @@ import { useSelector , useDispatch } from 'react-redux';
 import { useNavigate } from 'react-router';
 import CartItem from './CartItem';
 import { clearCart } from '../features/cart/cartSlice';
+import { showNotification } from '../features/notification/notificationSlice';
 
 function Cart() {
 
@@ -11,6 +12,17 @@ function Cart() {
     const cartItems = useSelector((state)=>state.cart.cartItems);
     const totalQuantity = useSelector((state)=>state.cart.totalQuantity);
     const totalAmount = useSelector((state)=>state.cart.totalAmount);
+
+    const handleClearCart = () => {
+        dispatch(clearCart);
+
+        dispatch(
+            showNotification({
+                message: `Cart cleared successfully.`,
+                type: "success",
+            })
+        );
+    };
 
     return(
         <div className="cart">
@@ -33,7 +45,7 @@ function Cart() {
                         <button className="checkout-btn" onClick={() => navigate("/checkout")}>
                             Proceed to Checkout
                         </button>
-                        <button className="clear-cart-btn" onClick={() => dispatch(clearCart())}>
+                        <button className="clear-cart-btn" onClick={handleClearCart}>
                             Clear Cart
                         </button>
                     </div>

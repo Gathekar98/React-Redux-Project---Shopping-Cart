@@ -13,6 +13,7 @@ function Navbar() {
                 <NavLink to="/">Products</NavLink>
                 <NavLink to="/cart">Cart ({totalQuantity})</NavLink>
                 <NavLink to="/checkout">Checkout</NavLink>
+                <NavLink to="/orders">Orders</NavLink>
             </div>
 
             <div className="cart-summary">

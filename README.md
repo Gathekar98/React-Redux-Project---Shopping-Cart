@@ -3841,3 +3841,1361 @@ You can explain it like this:
 I used local state for selected product quantity before adding to cart, because it is temporary UI state inside each product card. Once the user clicks Add to Cart, I dispatch the product with selected quantity to Redux. After that, cart quantity and total amount are managed globally in Redux.
 
 Complete this step and send done. Next, we will add toast notifications, so the user gets feedback like “Product added to cart.”
+
+Good. For toast notifications, we’ll create a second Redux slice. This teaches an important Redux skill: managing more than one slice in the same store.
+
+Thought for 12s
+
+Now we will add toast notifications.
+
+Example:
+
+Wireless Headphones added to cart.
+Cart cleared successfully.
+
+This step will teach you:
+
+How to create another Redux slice
+How to add multiple reducers in store.js
+How to dispatch two actions from one button click
+How to auto-hide notification using useEffect
+Step 1: Create notification slice
+
+Inside:
+
+src/features
+
+Create a new folder:
+
+notification
+
+Inside that folder, create:
+
+notificationSlice.js
+
+Final path:
+
+src/features/notification/notificationSlice.js
+
+Paste this code:
+
+import { createSlice } from "@reduxjs/toolkit";
+
+const initialState = {
+  message: "",
+  type: "",
+  isVisible: false,
+};
+
+const notificationSlice = createSlice({
+  name: "notification",
+  initialState,
+  reducers: {
+    showNotification: (state, action) => {
+      state.message = action.payload.message;
+      state.type = action.payload.type;
+      state.isVisible = true;
+    },
+
+    hideNotification: (state) => {
+      state.message = "";
+      state.type = "";
+      state.isVisible = false;
+    },
+  },
+});
+
+export const { showNotification, hideNotification } =
+  notificationSlice.actions;
+
+export default notificationSlice.reducer;
+Step 2: Understand this slice
+
+This slice stores notification state:
+
+const initialState = {
+  message: "",
+  type: "",
+  isVisible: false,
+};
+
+Example after product is added:
+
+{
+  message: "Wireless Headphones added to cart.",
+  type: "success",
+  isVisible: true
+}
+
+type can be:
+
+success
+error
+warning
+
+For now, we will mainly use success.
+
+Step 3: Update store.js
+
+Open:
+
+src/app/store.js
+
+Replace full code with this:
+
+import { configureStore } from "@reduxjs/toolkit";
+import cartReducer from "../features/cart/cartSlice";
+import notificationReducer from "../features/notification/notificationSlice";
+
+const loadCartFromLocalStorage = () => {
+  try {
+    const savedCart = localStorage.getItem("cart");
+
+    if (savedCart === null) {
+      return undefined;
+    }
+
+    return JSON.parse(savedCart);
+  } catch (error) {
+    console.log("Could not load cart from localStorage", error);
+    return undefined;
+  }
+};
+
+const saveCartToLocalStorage = (cartState) => {
+  try {
+    const cartStateString = JSON.stringify(cartState);
+    localStorage.setItem("cart", cartStateString);
+  } catch (error) {
+    console.log("Could not save cart to localStorage", error);
+  }
+};
+
+export const store = configureStore({
+  reducer: {
+    cart: cartReducer,
+    notification: notificationReducer,
+  },
+  preloadedState: {
+    cart: loadCartFromLocalStorage(),
+  },
+});
+
+store.subscribe(() => {
+  saveCartToLocalStorage(store.getState().cart);
+});
+Step 4: Understand multiple reducers
+
+Earlier we had only this:
+
+reducer: {
+  cart: cartReducer,
+}
+
+Now we have:
+
+reducer: {
+  cart: cartReducer,
+  notification: notificationReducer,
+}
+
+So Redux state now becomes:
+
+{
+  cart: {
+    cartItems: [],
+    totalQuantity: 0,
+    totalAmount: 0
+  },
+
+  notification: {
+    message: "",
+    type: "",
+    isVisible: false
+  }
+}
+
+Now we can read notification state like this:
+
+state.notification.message
+state.notification.isVisible
+Step 5: Create Toast component
+
+Inside:
+
+src/components
+
+Create:
+
+Toast.jsx
+
+Paste this code:
+
+import { useEffect } from "react";
+import { useSelector, useDispatch } from "react-redux";
+import { hideNotification } from "../features/notification/notificationSlice";
+
+function Toast() {
+  const dispatch = useDispatch();
+
+  const { message, type, isVisible } = useSelector(
+    (state) => state.notification
+  );
+
+  useEffect(() => {
+    if (isVisible) {
+      const timer = setTimeout(() => {
+        dispatch(hideNotification());
+      }, 2000);
+
+      return () => clearTimeout(timer);
+    }
+  }, [isVisible, dispatch]);
+
+  if (!isVisible) {
+    return null;
+  }
+
+  return <div className={`toast toast-${type}`}>{message}</div>;
+}
+
+export default Toast;
+Step 6: Understand useEffect
+
+This part auto-hides the toast:
+
+useEffect(() => {
+  if (isVisible) {
+    const timer = setTimeout(() => {
+      dispatch(hideNotification());
+    }, 2000);
+
+    return () => clearTimeout(timer);
+  }
+}, [isVisible, dispatch]);
+
+Meaning:
+
+When toast becomes visible,
+wait 2 seconds,
+then hide it.
+
+This line is cleanup:
+
+return () => clearTimeout(timer);
+
+It prevents old timers from creating bugs.
+
+Step 7: Add Toast in App.jsx
+
+Open:
+
+src/App.jsx
+
+Replace full code with this:
+
+import { Routes, Route } from "react-router";
+import Navbar from "./components/Navbar";
+import Toast from "./components/Toast";
+import ProductsPage from "./pages/ProductsPage";
+import CartPage from "./pages/CartPage";
+import CheckoutPage from "./pages/CheckoutPage";
+
+function App() {
+  return (
+    <div className="app">
+      <Navbar />
+      <Toast />
+
+      <Routes>
+        <Route path="/" element={<ProductsPage />} />
+        <Route path="/cart" element={<CartPage />} />
+        <Route path="/checkout" element={<CheckoutPage />} />
+      </Routes>
+    </div>
+  );
+}
+
+export default App;
+
+Now Toast is available globally.
+
+Step 8: Show toast when product is added
+
+Open:
+
+src/components/ProductCard.jsx
+
+Replace full code with this:
+
+import { useState } from "react";
+import { useDispatch } from "react-redux";
+import { addToCart } from "../features/cart/cartSlice";
+import { showNotification } from "../features/notification/notificationSlice";
+
+function ProductCard({ product }) {
+  const dispatch = useDispatch();
+
+  const [selectedQuantity, setSelectedQuantity] = useState(1);
+
+  const increaseSelectedQuantity = () => {
+    setSelectedQuantity(selectedQuantity + 1);
+  };
+
+  const decreaseSelectedQuantity = () => {
+    if (selectedQuantity > 1) {
+      setSelectedQuantity(selectedQuantity - 1);
+    }
+  };
+
+  const handleAddToCart = () => {
+    dispatch(
+      addToCart({
+        ...product,
+        quantity: selectedQuantity,
+      })
+    );
+
+    dispatch(
+      showNotification({
+        message: `${product.name} added to cart.`,
+        type: "success",
+      })
+    );
+
+    setSelectedQuantity(1);
+  };
+
+  return (
+    <div className="product-card">
+      <img src={product.image} alt={product.name} />
+
+      <h3>{product.name}</h3>
+
+      <p className="product-category">{product.category}</p>
+
+      <p>Rs. {product.price}</p>
+
+      <div className="product-quantity">
+        <button onClick={decreaseSelectedQuantity}>-</button>
+
+        <span>{selectedQuantity}</span>
+
+        <button onClick={increaseSelectedQuantity}>+</button>
+      </div>
+
+      <button onClick={handleAddToCart}>Add to Cart</button>
+    </div>
+  );
+}
+
+export default ProductCard;
+Step 9: Understand two dispatch calls
+
+Inside one button click, we are dispatching two actions:
+
+dispatch(addToCart({ ...product, quantity: selectedQuantity }));
+
+This updates cart state.
+
+Then:
+
+dispatch(
+  showNotification({
+    message: `${product.name} added to cart.`,
+    type: "success",
+  })
+);
+
+This updates notification state.
+
+So one click updates two Redux slices:
+
+Add to Cart button click
+        ↓
+cart/addToCart
+        ↓
+notification/showNotification
+
+In Redux DevTools, you should now see both actions.
+
+Step 10: Show toast when cart is cleared
+
+Open:
+
+src/components/Cart.jsx
+
+Replace full code with this:
+
+import { useSelector, useDispatch } from "react-redux";
+import { useNavigate } from "react-router";
+import CartItem from "./CartItem";
+import { clearCart } from "../features/cart/cartSlice";
+import { showNotification } from "../features/notification/notificationSlice";
+
+function Cart() {
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
+
+  const cartItems = useSelector((state) => state.cart.cartItems);
+  const totalQuantity = useSelector((state) => state.cart.totalQuantity);
+  const totalAmount = useSelector((state) => state.cart.totalAmount);
+
+  const handleClearCart = () => {
+    dispatch(clearCart());
+
+    dispatch(
+      showNotification({
+        message: "Cart cleared successfully.",
+        type: "success",
+      })
+    );
+  };
+
+  return (
+    <div className="cart">
+      <h2>Cart</h2>
+
+      {cartItems.length === 0 ? (
+        <p>Your cart is empty.</p>
+      ) : (
+        <>
+          <div className="cart-items">
+            {cartItems.map((item) => (
+              <CartItem key={item.id} item={item} />
+            ))}
+          </div>
+
+          <div className="cart-total">
+            <h3>Cart Summary</h3>
+            <p>Total Quantity: {totalQuantity}</p>
+            <p>Total Amount: Rs. {totalAmount}</p>
+
+            <button
+              className="checkout-btn"
+              onClick={() => navigate("/checkout")}
+            >
+              Proceed to Checkout
+            </button>
+
+            <button className="clear-cart-btn" onClick={handleClearCart}>
+              Clear Cart
+            </button>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+export default Cart;
+Step 11: Add CSS
+
+Open:
+
+src/index.css
+
+Add this at the bottom:
+
+.toast {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  padding: 12px 18px;
+  border-radius: 8px;
+  color: white;
+  font-weight: bold;
+  z-index: 1000;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.25);
+}
+
+.toast-success {
+  background-color: #198754;
+}
+
+.toast-error {
+  background-color: #dc3545;
+}
+
+.toast-warning {
+  background-color: #ffc107;
+  color: #222;
+}
+Step 12: Test it
+
+Run:
+
+npm run dev
+
+Now test:
+
+Go to Products page
+Click Add to Cart
+Toast should appear on top-right
+Toast should disappear after 2 seconds
+Open Redux DevTools
+Click Add to Cart again
+You should see two actions:
+cart/addToCart
+notification/showNotification
+Go to Cart page
+Click Clear Cart
+Toast should show: Cart cleared successfully.
+What you learned
+
+Now your Redux store has two slices:
+
+Redux Store
+ ├── cart
+ └── notification
+
+This is how real Redux apps are usually structured.
+
+One feature gets one slice:
+
+cart feature          → cartSlice.js
+notification feature  → notificationSlice.js
+user feature          → userSlice.js
+products feature      → productSlice.js
+Interview explanation
+
+You can say:
+
+I created a separate notification slice using Redux Toolkit. The cart slice manages cart data, while the notification slice manages toast message, type, and visibility. When the user adds a product to cart, I dispatch addToCart and then dispatch showNotification. The Toast component reads notification state using useSelector and auto-hides the message using useEffect.
+
+Complete this step and send done. Next, we will add order history, where placed orders will be stored in Redux.
+
+Next we’ll add Order History as a new Redux feature. This is useful because it connects checkout, cart clearing, and a separate history page using global state.
+
+Thought for 15s
+
+Great. Now we will add Order History.
+
+When user places an order, we will save the order in Redux.
+
+Example order:
+
+{
+  id: "ORD-1720000000000",
+  customer: {
+    fullName: "Rahul Sharma",
+    email: "rahul@gmail.com",
+    address: "Pune",
+    city: "Pune",
+    pincode: "411045"
+  },
+  items: [...cartItems],
+  totalAmount: 7497,
+  totalQuantity: 3,
+  orderDate: "09/07/2026, 5:30:00 pm"
+}
+
+You will learn:
+
+How to create another Redux slice
+How to store placed orders
+How to dispatch order data from checkout page
+How to show order history on a separate page
+How to persist order history in localStorage
+Step 1: Create orderSlice.js
+
+Inside:
+
+src/features
+
+Create a new folder:
+
+orders
+
+Inside that folder, create:
+
+orderSlice.js
+
+Final path:
+
+src/features/orders/orderSlice.js
+
+Paste this code:
+
+import { createSlice } from "@reduxjs/toolkit";
+
+const initialState = {
+  orders: [],
+};
+
+const orderSlice = createSlice({
+  name: "orders",
+  initialState,
+  reducers: {
+    addOrder: (state, action) => {
+      state.orders.push(action.payload);
+    },
+
+    clearOrders: (state) => {
+      state.orders = [];
+    },
+  },
+});
+
+export const { addOrder, clearOrders } = orderSlice.actions;
+
+export default orderSlice.reducer;
+Explanation
+
+This slice stores all placed orders:
+
+orders: []
+
+When user places an order, we dispatch:
+
+dispatch(addOrder(orderData));
+
+Then Redux stores the order in:
+
+state.orders.orders
+
+Why double orders.orders?
+
+Because in store.js, we will write:
+
+orders: orderReducer
+
+So the Redux state becomes:
+
+state.orders
+
+Inside that slice, we have:
+
+orders: []
+
+So final access is:
+
+state.orders.orders
+Step 2: Update store.js
+
+Open:
+
+src/app/store.js
+
+Replace full code with this:
+
+import { configureStore } from "@reduxjs/toolkit";
+import cartReducer from "../features/cart/cartSlice";
+import notificationReducer from "../features/notification/notificationSlice";
+import orderReducer from "../features/orders/orderSlice";
+
+const loadCartFromLocalStorage = () => {
+  try {
+    const savedCart = localStorage.getItem("cart");
+
+    if (savedCart === null) {
+      return undefined;
+    }
+
+    return JSON.parse(savedCart);
+  } catch (error) {
+    console.log("Could not load cart from localStorage", error);
+    return undefined;
+  }
+};
+
+const loadOrdersFromLocalStorage = () => {
+  try {
+    const savedOrders = localStorage.getItem("orders");
+
+    if (savedOrders === null) {
+      return undefined;
+    }
+
+    return JSON.parse(savedOrders);
+  } catch (error) {
+    console.log("Could not load orders from localStorage", error);
+    return undefined;
+  }
+};
+
+const saveCartToLocalStorage = (cartState) => {
+  try {
+    const cartStateString = JSON.stringify(cartState);
+    localStorage.setItem("cart", cartStateString);
+  } catch (error) {
+    console.log("Could not save cart to localStorage", error);
+  }
+};
+
+const saveOrdersToLocalStorage = (ordersState) => {
+  try {
+    const ordersStateString = JSON.stringify(ordersState);
+    localStorage.setItem("orders", ordersStateString);
+  } catch (error) {
+    console.log("Could not save orders to localStorage", error);
+  }
+};
+
+export const store = configureStore({
+  reducer: {
+    cart: cartReducer,
+    notification: notificationReducer,
+    orders: orderReducer,
+  },
+  preloadedState: {
+    cart: loadCartFromLocalStorage(),
+    orders: loadOrdersFromLocalStorage(),
+  },
+});
+
+store.subscribe(() => {
+  saveCartToLocalStorage(store.getState().cart);
+  saveOrdersToLocalStorage(store.getState().orders);
+});
+Explanation
+
+Now Redux store has three slices:
+
+reducer: {
+  cart: cartReducer,
+  notification: notificationReducer,
+  orders: orderReducer,
+}
+
+So Redux state becomes:
+
+{
+  cart: {},
+  notification: {},
+  orders: {}
+}
+
+We are also saving orders to localStorage, so order history remains after page refresh.
+
+Step 3: Update CheckoutForm.jsx
+
+Open:
+
+src/components/CheckoutForm.jsx
+
+Replace full code with this:
+
+import { useState } from "react";
+import { useSelector, useDispatch } from "react-redux";
+import { useNavigate } from "react-router";
+import { clearCart } from "../features/cart/cartSlice";
+import { addOrder } from "../features/orders/orderSlice";
+import { showNotification } from "../features/notification/notificationSlice";
+
+function CheckoutForm() {
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
+
+  const cartItems = useSelector((state) => state.cart.cartItems);
+  const totalAmount = useSelector((state) => state.cart.totalAmount);
+  const totalQuantity = useSelector((state) => state.cart.totalQuantity);
+
+  const [formData, setFormData] = useState({
+    fullName: "",
+    email: "",
+    address: "",
+    city: "",
+    pincode: "",
+  });
+
+  const [errors, setErrors] = useState({});
+  const [orderSuccess, setOrderSuccess] = useState(false);
+
+  const validateForm = () => {
+    const newErrors = {};
+
+    if (formData.fullName.trim().length < 3) {
+      newErrors.fullName = "Full name must be at least 3 characters.";
+    }
+
+    if (!formData.email.includes("@") || !formData.email.includes(".")) {
+      newErrors.email = "Please enter a valid email address.";
+    }
+
+    if (formData.address.trim().length < 10) {
+      newErrors.address = "Address must be at least 10 characters.";
+    }
+
+    if (formData.city.trim().length < 2) {
+      newErrors.city = "City name must be at least 2 characters.";
+    }
+
+    if (!/^[0-9]{6}$/.test(formData.pincode)) {
+      newErrors.pincode = "Pincode must be exactly 6 digits.";
+    }
+
+    return newErrors;
+  };
+
+  const handleInputChange = (event) => {
+    const { name, value } = event.target;
+
+    setFormData({
+      ...formData,
+      [name]: value,
+    });
+
+    setErrors({
+      ...errors,
+      [name]: "",
+    });
+  };
+
+  const handleSubmit = (event) => {
+    event.preventDefault();
+
+    if (cartItems.length === 0) {
+      alert("Your cart is empty. Please add products before checkout.");
+      navigate("/");
+      return;
+    }
+
+    const validationErrors = validateForm();
+
+    if (Object.keys(validationErrors).length > 0) {
+      setErrors(validationErrors);
+      return;
+    }
+
+    const orderData = {
+      id: `ORD-${Date.now()}`,
+      customer: {
+        ...formData,
+      },
+      items: cartItems.map((item) => ({
+        ...item,
+      })),
+      totalAmount,
+      totalQuantity,
+      orderDate: new Date().toLocaleString(),
+    };
+
+    dispatch(addOrder(orderData));
+    dispatch(clearCart());
+
+    dispatch(
+      showNotification({
+        message: "Order placed successfully.",
+        type: "success",
+      })
+    );
+
+    setOrderSuccess(true);
+
+    setFormData({
+      fullName: "",
+      email: "",
+      address: "",
+      city: "",
+      pincode: "",
+    });
+
+    setErrors({});
+  };
+
+  if (orderSuccess) {
+    return (
+      <div className="checkout-success">
+        <h2>Order Placed Successfully!</h2>
+        <p>Thank you for shopping with us.</p>
+
+        <button onClick={() => navigate("/")}>Continue Shopping</button>
+        <button onClick={() => navigate("/orders")}>View Orders</button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="checkout">
+      <h2>Checkout</h2>
+
+      <div className="checkout-summary">
+        <p>Total Products: {cartItems.length}</p>
+        <p>Total Quantity: {totalQuantity}</p>
+        <p>Total Amount: Rs. {totalAmount}</p>
+      </div>
+
+      <form onSubmit={handleSubmit} className="checkout-form">
+        <div className="form-group">
+          <label>Full Name</label>
+          <input
+            type="text"
+            name="fullName"
+            value={formData.fullName}
+            onChange={handleInputChange}
+            placeholder="Enter your full name"
+          />
+          {errors.fullName && <p className="error-text">{errors.fullName}</p>}
+        </div>
+
+        <div className="form-group">
+          <label>Email</label>
+          <input
+            type="text"
+            name="email"
+            value={formData.email}
+            onChange={handleInputChange}
+            placeholder="Enter your email"
+          />
+          {errors.email && <p className="error-text">{errors.email}</p>}
+        </div>
+
+        <div className="form-group">
+          <label>Address</label>
+          <textarea
+            name="address"
+            value={formData.address}
+            onChange={handleInputChange}
+            placeholder="Enter your address"
+          ></textarea>
+          {errors.address && <p className="error-text">{errors.address}</p>}
+        </div>
+
+        <div className="form-group">
+          <label>City</label>
+          <input
+            type="text"
+            name="city"
+            value={formData.city}
+            onChange={handleInputChange}
+            placeholder="Enter your city"
+          />
+          {errors.city && <p className="error-text">{errors.city}</p>}
+        </div>
+
+        <div className="form-group">
+          <label>Pincode</label>
+          <input
+            type="text"
+            name="pincode"
+            value={formData.pincode}
+            onChange={handleInputChange}
+            placeholder="Enter pincode"
+          />
+          {errors.pincode && <p className="error-text">{errors.pincode}</p>}
+        </div>
+
+        <button type="submit" className="place-order-btn">
+          Place Order
+        </button>
+      </form>
+    </div>
+  );
+}
+
+export default CheckoutForm;
+Step 4: Understand the order creation logic
+
+This is the main new part:
+
+const orderData = {
+  id: `ORD-${Date.now()}`,
+  customer: {
+    ...formData,
+  },
+  items: cartItems.map((item) => ({
+    ...item,
+  })),
+  totalAmount,
+  totalQuantity,
+  orderDate: new Date().toLocaleString(),
+};
+id
+id: `ORD-${Date.now()}`
+
+This creates a simple unique order ID.
+
+Example:
+
+ORD-1720000000000
+customer
+customer: {
+  ...formData,
+}
+
+This stores checkout form details.
+
+items
+items: cartItems.map((item) => ({
+  ...item,
+}))
+
+This copies cart items into the order.
+
+This is important because after order is placed, we clear the cart. The order should still keep the product details.
+
+totalAmount
+totalAmount
+
+This stores the order value.
+
+orderDate
+orderDate: new Date().toLocaleString()
+
+This stores the date and time of order.
+
+Step 5: Create OrdersPage.jsx
+
+Inside:
+
+src/pages
+
+Create:
+
+OrdersPage.jsx
+
+Paste this:
+
+import OrderHistory from "../components/OrderHistory";
+
+function OrdersPage() {
+  return (
+    <div>
+      <OrderHistory />
+    </div>
+  );
+}
+
+export default OrdersPage;
+Step 6: Create OrderHistory.jsx
+
+Inside:
+
+src/components
+
+Create:
+
+OrderHistory.jsx
+
+Paste this code:
+
+import { useDispatch, useSelector } from "react-redux";
+import { clearOrders } from "../features/orders/orderSlice";
+import { showNotification } from "../features/notification/notificationSlice";
+
+function OrderHistory() {
+  const dispatch = useDispatch();
+
+  const orders = useSelector((state) => state.orders.orders);
+
+  const handleClearOrders = () => {
+    dispatch(clearOrders());
+
+    dispatch(
+      showNotification({
+        message: "Order history cleared.",
+        type: "success",
+      })
+    );
+  };
+
+  return (
+    <div className="orders-page">
+      <div className="orders-header">
+        <h2>Order History</h2>
+
+        {orders.length > 0 && (
+          <button className="clear-orders-btn" onClick={handleClearOrders}>
+            Clear Order History
+          </button>
+        )}
+      </div>
+
+      {orders.length === 0 ? (
+        <p>No orders placed yet.</p>
+      ) : (
+        <div className="orders-list">
+          {orders.map((order) => (
+            <div className="order-card" key={order.id}>
+              <div className="order-card-header">
+                <div>
+                  <h3>{order.id}</h3>
+                  <p>{order.orderDate}</p>
+                </div>
+
+                <div>
+                  <strong>Rs. {order.totalAmount}</strong>
+                </div>
+              </div>
+
+              <div className="order-customer">
+                <h4>Customer Details</h4>
+                <p>Name: {order.customer.fullName}</p>
+                <p>Email: {order.customer.email}</p>
+                <p>
+                  Address: {order.customer.address}, {order.customer.city} -{" "}
+                  {order.customer.pincode}
+                </p>
+              </div>
+
+              <div className="order-items">
+                <h4>Products</h4>
+
+                {order.items.map((item) => (
+                  <div className="order-item" key={item.id}>
+                    <span>{item.name}</span>
+                    <span>Qty: {item.quantity}</span>
+                    <span>Rs. {item.price * item.quantity}</span>
+                  </div>
+                ))}
+              </div>
+
+              <div className="order-total">
+                <p>Total Quantity: {order.totalQuantity}</p>
+                <p>Total Amount: Rs. {order.totalAmount}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+export default OrderHistory;
+Step 7: Add Orders route in App.jsx
+
+Open:
+
+src/App.jsx
+
+Replace full code with this:
+
+import { Routes, Route } from "react-router";
+import Navbar from "./components/Navbar";
+import Toast from "./components/Toast";
+import ProductsPage from "./pages/ProductsPage";
+import CartPage from "./pages/CartPage";
+import CheckoutPage from "./pages/CheckoutPage";
+import OrdersPage from "./pages/OrdersPage";
+
+function App() {
+  return (
+    <div className="app">
+      <Navbar />
+      <Toast />
+
+      <Routes>
+        <Route path="/" element={<ProductsPage />} />
+        <Route path="/cart" element={<CartPage />} />
+        <Route path="/checkout" element={<CheckoutPage />} />
+        <Route path="/orders" element={<OrdersPage />} />
+      </Routes>
+    </div>
+  );
+}
+
+export default App;
+Step 8: Add Orders link in Navbar.jsx
+
+Open:
+
+src/components/Navbar.jsx
+
+Replace full code with this:
+
+import { NavLink } from "react-router";
+import { useSelector } from "react-redux";
+
+function Navbar() {
+  const totalQuantity = useSelector((state) => state.cart.totalQuantity);
+  const totalAmount = useSelector((state) => state.cart.totalAmount);
+
+  return (
+    <nav className="navbar">
+      <h1>Shopping Cart Redux App</h1>
+
+      <div className="nav-links">
+        <NavLink to="/">Products</NavLink>
+
+        <NavLink to="/cart">Cart ({totalQuantity})</NavLink>
+
+        <NavLink to="/checkout">Checkout</NavLink>
+
+        <NavLink to="/orders">Orders</NavLink>
+      </div>
+
+      <div className="cart-summary">
+        <span>Total Items: {totalQuantity}</span>
+        <span>Total: Rs. {totalAmount}</span>
+      </div>
+    </nav>
+  );
+}
+
+export default Navbar;
+Step 9: Add CSS
+
+Open:
+
+src/index.css
+
+Add this at the bottom:
+
+.orders-page {
+  background-color: white;
+  padding: 24px;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.orders-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.orders-header h2 {
+  margin: 0;
+}
+
+.orders-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.order-card {
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 16px;
+  background-color: #fafafa;
+}
+
+.order-card-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  border-bottom: 1px solid #ddd;
+  padding-bottom: 10px;
+  margin-bottom: 12px;
+}
+
+.order-card-header h3 {
+  margin: 0 0 4px;
+}
+
+.order-card-header p {
+  margin: 0;
+  color: #666;
+}
+
+.order-customer,
+.order-items,
+.order-total {
+  margin-top: 12px;
+}
+
+.order-customer h4,
+.order-items h4 {
+  margin-bottom: 8px;
+}
+
+.order-customer p {
+  margin: 4px 0;
+}
+
+.order-item {
+  display: grid;
+  grid-template-columns: 1fr 80px 100px;
+  gap: 12px;
+  padding: 8px 0;
+  border-bottom: 1px solid #e5e5e5;
+}
+
+.order-total {
+  background-color: #f2f2f2;
+  padding: 10px;
+  border-radius: 6px;
+}
+
+.order-total p {
+  margin: 4px 0;
+  font-weight: bold;
+}
+
+.clear-orders-btn {
+  background-color: #b00020;
+  color: white;
+  border: none;
+  padding: 10px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+.clear-orders-btn:hover {
+  background-color: #8c001a;
+}
+
+.checkout-success {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+Step 10: Test the full order flow
+
+Run:
+
+npm run dev
+
+Now test:
+
+Add products to cart
+Go to Cart page
+Proceed to Checkout
+Fill the checkout form
+Click Place Order
+Cart should become empty
+Success message should appear
+Click View Orders
+Your order should appear in Order History
+Refresh the page
+Order should still remain
+Click Clear Order History
+Orders should become empty
+Step 11: Check Redux DevTools
+
+After placing order, Redux DevTools should show these actions:
+
+orders/addOrder
+cart/clearCart
+notification/showNotification
+
+This is a very good debugging point.
+
+One checkout form submit now updates three slices:
+
+Checkout submit
+      ↓
+orders/addOrder
+      ↓
+cart/clearCart
+      ↓
+notification/showNotification
+What you learned
+
+Your Redux store now has:
+
+Redux Store
+ ├── cart
+ ├── notification
+ └── orders
+
+Each feature has its own slice:
+
+cartSlice.js          → cart logic
+notificationSlice.js  → toast logic
+orderSlice.js         → order history logic
+
+This is a real-world Redux Toolkit structure.
+
+Interview explanation
+
+You can say:
+
+I created a separate order slice to store placed orders. When the user submits the checkout form, I create an order object with customer details, cart items, total quantity, total amount, and order date. Then I dispatch addOrder to save the order, dispatch clearCart to empty the cart, and dispatch showNotification to show a success message. I also persisted order history in localStorage so orders remain after refresh.
+
+Complete this step and send done. Next, we will add API product fetching using createAsyncThunk, which is one of the most important Redux Toolkit concepts for interviews.

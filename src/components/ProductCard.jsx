@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useDispatch } from "react-redux";
 import { addToCart } from "../features/cart/cartSlice";
+import { showNotification } from "../features/notification/notificationSlice";
 
 function ProductCard({ product }) {
 
@@ -20,11 +21,22 @@ function ProductCard({ product }) {
     };
 
     const handleAddToCart = () => {
+        // Inside one button click, we are dispatching two actions:
+
+        // This updates cart state.
         dispatch(addToCart({
                 ...product, //Take all product details.
                 quantity : selectedQuantity, //add selected quantity also.
             }) //send everything to redux.
         ); //This line sends the selected product to Redux:
+        
+        // This updates notification state.
+        dispatch(showNotification({
+                message: `${product.name} added to cart.`,
+                type: "success",
+            })
+        );
+
         setSelectedQuantity(1);
     };
 
@@ -58,3 +70,10 @@ export default ProductCard;
 // Redux state updates
 //    ↓
 // UI updates automatically
+
+
+// Add to Cart button click
+//         ↓
+// cart/addToCart
+//         ↓
+// notification/showNotification
