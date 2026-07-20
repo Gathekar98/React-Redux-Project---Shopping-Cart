@@ -1,9 +1,4 @@
-1. lets start with the shopping cart app redux, instruct me from basics now how to start the project how to build it in vs code we are using vs code 
-Thought for 21s
-
-Great. We will build the Shopping Cart Redux App from zero in VS Code.
-
-We will use:
+1. lets start with the shopping cart app redux
 
 React + Vite
 Redux Toolkit
