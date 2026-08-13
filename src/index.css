@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Cormorant+Garamond:wght@500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap');
 
 :root {
   --bg: #e3ded7;
@@ -16,10 +16,9 @@
   --danger: #9a4c4c;
   --shadow: rgba(51, 51, 51, 0.06);
   --shadow-soft: rgba(51, 51, 51, 0.05);
-  --radius-lg: 26px;
-  --radius-md: 18px;
-  --radius-sm: 12px;
-  --font-display: 'Cormorant Garamond', serif;
+  --radius-lg: 18px;
+  --radius-md: 14px;
+  --radius-sm: 10px;
   --font-body: 'Manrope', sans-serif;
 }
 
@@ -63,7 +62,7 @@ button:hover {
 .app {
   max-width: 1400px;
   margin: 0 auto;
-  padding: 28px 20px 60px;
+  padding: 20px 18px 48px;
 }
 
 .navbar {
@@ -73,23 +72,22 @@ button:hover {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 20px;
-  background: rgba(250, 247, 246, 0.8);
+  gap: 18px;
+  background: rgba(250, 247, 246, 0.88);
   border: 1px solid rgba(51, 51, 51, 0.06);
-  border-radius: 20px;
-  padding: 18px 22px;
-  margin-bottom: 28px;
-  box-shadow: 0 12px 25px rgba(51, 51, 51, 0.05);
-  backdrop-filter: blur(10px);
+  border-radius: 16px;
+  padding: 14px 18px;
+  margin-bottom: 18px;
+  box-shadow: 0 10px 22px rgba(51, 51, 51, 0.04);
+  backdrop-filter: blur(8px);
 }
 
 .navbar h1 {
   margin: 0;
-  font-family: var(--font-display);
-  font-size: clamp(1.7rem, 2vw, 2.5rem);
-  letter-spacing: 0.02em;
+  font-size: clamp(1.3rem, 1.7vw, 1.8rem);
+  letter-spacing: 0.01em;
   color: var(--primary);
-  font-weight: 600;
+  font-weight: 800;
 }
 
 .nav-links {
@@ -141,31 +139,31 @@ button:hover {
 .orders-page,
 .checkout-success,
 .api-error {
-  background: rgba(255, 255, 255, 0.7);
+  background: rgba(255, 255, 255, 0.72);
   border: 1px solid var(--line);
   border-radius: var(--radius-lg);
-  box-shadow: 0 18px 35px var(--shadow-soft);
+  box-shadow: 0 12px 28px var(--shadow-soft);
 }
 
 .products-page,
 .orders-page {
-  padding: 24px;
+  padding: 20px;
 }
 
 .page-header {
   display: flex;
   justify-content: space-between;
   align-items: end;
-  gap: 16px;
-  margin-bottom: 22px;
+  gap: 12px;
+  margin-bottom: 18px;
 }
 
 .eyebrow {
-  margin: 0 0 8px;
+  margin: 0 0 6px;
   color: var(--accent-strong);
   text-transform: uppercase;
-  letter-spacing: 0.12em;
-  font-size: 0.72rem;
+  letter-spacing: 0.1em;
+  font-size: 0.7rem;
   font-weight: 800;
 }
 
@@ -174,32 +172,31 @@ button:hover {
 .cart h2,
 .orders-header h2 {
   margin: 0;
-  font-family: var(--font-display);
-  font-size: clamp(2.2rem, 3vw, 3rem);
-  line-height: 0.95;
+  font-size: clamp(1.6rem, 2vw, 2.2rem);
+  line-height: 1.1;
   color: var(--primary);
-  font-weight: 600;
-  letter-spacing: 0.01em;
+  font-weight: 800;
+  letter-spacing: -0.02em;
 }
 
 .products-summary {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 120px;
+  min-width: 110px;
   background: rgba(40, 85, 112, 0.06);
   color: var(--accent-strong);
   border: 1px solid rgba(40, 85, 112, 0.08);
   border-radius: 999px;
-  padding: 10px 14px;
+  padding: 8px 12px;
   font-weight: 800;
+  font-size: 0.8rem;
 }
-
 .filters {
   display: flex;
   flex-wrap: wrap;
-  gap: 12px;
-  margin-bottom: 24px;
+  gap: 10px;
+  margin-bottom: 20px;
 }
 
 .filters input,
@@ -208,10 +205,11 @@ button:hover {
 .form-group textarea {
   background: var(--panel);
   border: 1px solid var(--line);
-  border-radius: 14px;
-  padding: 12px 14px;
+  border-radius: 12px;
+  padding: 10px 12px;
   color: var(--primary);
   outline: none;
+  font-size: 0.94rem;
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
@@ -241,6 +239,7 @@ button:hover {
 .api-error button,
 .order-card button,
 .product-card button,
+/* .addToCartBtn, */
 .remove-btn {
   border: none;
   border-radius: 12px;
@@ -248,6 +247,7 @@ button:hover {
   font-weight: 800;
   transition: transform 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
 }
+.addToCartBtn{width:100%; border-radius:999px !important; min-height:40px;}
 
 .refresh-btn,
 .place-order-btn,
@@ -280,37 +280,37 @@ button:hover {
 
 .product-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 22px;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 18px;
 }
 
 .product-card {
   background: linear-gradient(180deg, #fff 0%, #f8f5f3 100%);
   border: 1px solid var(--line);
   border-radius: var(--radius-md);
-  padding: 16px;
-  box-shadow: 0 12px 24px rgba(51, 51, 51, 0.04);
+  padding: 12px;
+  box-shadow: 0 10px 20px rgba(51, 51, 51, 0.04);
 }
 
 .product-card img {
   width: 100%;
-  height: 190px;
+  height: 180px;
   object-fit: cover;
-  border-radius: 16px;
+  border-radius: 12px;
   background: var(--panel-alt);
   border: 1px solid rgba(51, 51, 51, 0.03);
 }
 
 .product-card h3 {
-  margin: 16px 0 8px;
-  font-size: 1.12rem;
+  margin: 12px 0 6px;
+  font-size: 1rem;
   color: var(--primary);
   letter-spacing: 0.01em;
 }
 
 .product-category {
   margin: 0;
-  font-size: 0.8rem;
+  font-size: 0.72rem;
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -319,7 +319,7 @@ button:hover {
 
 .product-card p {
   margin: 8px 0 0;
-  font-size: 1.08rem;
+  font-size: 0.97rem;
   font-weight: 800;
   color: var(--primary-soft);
 }
@@ -328,24 +328,24 @@ button:hover {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 12px;
+  gap: 10px;
   background: var(--panel-alt);
   border: 1px solid var(--line);
   border-radius: 999px;
-  padding: 8px 12px;
-  margin: 16px 0;
-  min-height: 46px;
+  padding: 8px 10px;
+  margin: 12px 0;
+  min-height: 40px;
 }
 
 .product-quantity button {
-  width: 30px;
-  height: 30px;
+  width: 28px;
+  height: 28px;
   border: none;
   border-radius: 50%;
   background: var(--primary);
   color: white;
   cursor: pointer;
-  font-size: 1.2rem;
+  font-size: 1.1rem;
   font-weight: 800;
 }
 
@@ -466,9 +466,9 @@ button:hover {
 }
 
 .checkout {
-  max-width: 720px;
+  max-width: 680px;
   margin: 0 auto;
-  padding: 28px;
+  padding: 22px;
 }
 
 .checkout-summary {
@@ -527,9 +527,8 @@ button:hover {
 
 .checkout-success h2 {
   margin: 0 0 10px;
-  font-family: var(--font-display);
-  font-size: clamp(2.3rem, 3vw, 3rem);
-  font-weight: 600;
+  font-size: clamp(1.8rem, 2.4vw, 2.4rem);
+  font-weight: 800;
 }
 
 .checkout-success p {

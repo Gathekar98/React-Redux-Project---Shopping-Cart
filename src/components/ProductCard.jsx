@@ -52,7 +52,7 @@ function ProductCard({ product }) {
                 <span>{selectedQuantity}</span>
                 <button onClick={increaseSelectedQuantity}>+</button>
             </div>
-            <button onClick={handleAddToCart}>Add to Cart</button>
+            <button className="addToCartBtn" onClick={handleAddToCart}>Add to Cart</button>
         </div>
     );
 }
