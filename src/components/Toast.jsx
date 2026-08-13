@@ -23,7 +23,7 @@ function Toast(){
         return null;
     }
 
-    return <div className="{`toast toast-${type}`}">{message}</div>;
+    return <div className={`toast toast-${type}`}>{message}</div>;
 }
 
 export default Toast;

@@ -73,8 +73,16 @@ function ProductList() {
    }
 
     return(
-        <div>
-            <h2>Products</h2>
+        <div className="products-page">
+            <div className="page-header">
+                <div>
+                    <p className="eyebrow">Curated essentials</p>
+                    <h2>Fresh Finds</h2>
+                </div>
+                <div className="products-summary">
+                    <span>{filteredProducts.length} items</span>
+                </div>
+            </div>
             <div className="filters">
                 <input
                     type="text"
@@ -102,18 +110,18 @@ function ProductList() {
                     <option value="high-to-low">Price: High to Low</option>
                 </select>
                 <button 
-                    className="refersh-btn" 
+                    className="refresh-btn" 
                     onClick={handleRefreshProducts} 
                     disabled={isLoading}
                 >
-                    {isLoading ? "Refreshing...." : "Refersh Products"}
+                    {isLoading ? "Refreshing..." : "Refresh Products"}
                 </button>
 
-                {error && <p className="error-text">Could not refersh: {error}</p>}
+                {error && <p className="error-text">Could not refresh: {error}</p>}
             </div>
 
             {filteredProducts.length === 0 ? (
-                <p>No Products Found..</p>
+                <p className="empty-state">No products found for your search.</p>
             ):(
                 <div className="product-grid">
                 {/* We are looping over all products: */}

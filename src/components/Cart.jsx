@@ -15,7 +15,7 @@ function Cart() {
     const totalAmount = useSelector((state)=>state.cart.totalAmount);
 
     const handleClearCart = () => {
-        dispatch(clearCart);
+        dispatch(clearCart());
 
         dispatch(
             showNotification({

@@ -7,7 +7,7 @@ function OrderHistory() {
     const dispatch = useDispatch();
     const orders = useSelector((state) => state.orders.orders);
     const handleClearOrders = () =>{
-        dispatch(clearOrder);
+        dispatch(clearOrder());
 
         dispatch(showNotification({
             message: "Order history cleared.",
@@ -20,7 +20,7 @@ function OrderHistory() {
             <div className="orders-header">
                 <h2>Order History</h2>
 
-                {orders.length < 0 && (
+                {orders.length > 0 && (
                     <button className="clear-orders-btn" onClick={handleClearOrders}>Clear Order History</button>
                 )}
             </div>
