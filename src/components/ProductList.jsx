@@ -6,32 +6,25 @@ import ProductCard from "./ProductCard";
 function ProductList() {
 
     const dispatch = useDispatch();
-
-    // This reads product state from Redux:
     const {products, isLoading, error } = useSelector((state) => state.products);
 
-    // searchText stores what user types in search box.
     const [searchText, setSearchText] = useState("");
-    // selectedCategory stores selected category.
     const [selectedCategory, setSelectedCategory] = useState("All");
-    // This stores the selected sorting option.
     const [sortOrder, setSortOrder] = useState("default");
 
-    // This code runs when ProductList loads: For initial page load.
     useEffect(() => {
         dispatch(fetchProducts());
     },[dispatch]);
 
-    //For manual refersh.
     const handleRefreshProducts = () => {
         dispatch(fetchProducts());
     }
+
     const categories = ["All",
         ...new Set(products.map((product) => product.category).filter(Boolean)),
     ];
 
     const getFilteredProducts = () => {
-        // This creates a copy of the products array. Now we are sorting the copied array, not the original array.
         let updatedProducts = [...products];
 
         if(searchText.trim() !== ""){
@@ -52,47 +45,59 @@ function ProductList() {
             updatedProducts.sort((a, b) => b.price - a.price);
         }
         return updatedProducts;
-
     }
 
-   const filteredProducts = getFilteredProducts();
+    const filteredProducts = getFilteredProducts();
 
-   if(isLoading && products.length === 0){
-    return <h2>Loading Products....</h2>;
-   }
+    if(isLoading && products.length === 0){
+        return (
+            <div className="loading-state">
+                <div className="loading-dot"></div>
+                <h2>Loading Products....</h2>
+            </div>
+        );
+    }
 
-   if(error && products.length === 0){
-    return (
-        <div className="api-error">
-            <h2>Failed to Load Products</h2>
-            <p>{error}</p>
-            {/* If API fails and no products are available, show retry button.*/}
-            <button onClick={handleRefreshProducts}>Retry</button>
-        </div>
-    );
-   }
+    if(error && products.length === 0){
+        return (
+            <div className="api-error">
+                <p className="eyebrow">Something went wrong</p>
+                <h2>Failed to Load Products</h2>
+                <p>{error}</p>
+                <button onClick={handleRefreshProducts}>Retry</button>
+            </div>
+        );
+    }
 
     return(
-        <div className="products-page">
-            <div className="page-header">
+        <main className="products-page">
+            <section className="shop-hero">
                 <div>
                     <p className="eyebrow">Curated essentials</p>
-                    <h2>Fresh Finds</h2>
+                    <h2>Fresh finds for everyday living.</h2>
+                    <p className="hero-copy">Explore a clean, curated collection and add exactly what you need to your cart.</p>
                 </div>
                 <div className="products-summary">
-                    <span>{filteredProducts.length} items</span>
+                    <span>{filteredProducts.length}</span>
+                    <small>items available</small>
                 </div>
-            </div>
-            <div className="filters">
-                <input
-                    type="text"
-                    placeholder="Search products"
-                    value={searchText}
-                    onChange={(event)=> setSearchText(event.target.value)}
-                />
+            </section>
+
+            <section className="filters" aria-label="Product filters">
+                <div className="search-field">
+                    <span aria-hidden="true">⌕</span>
+                    <input
+                        type="text"
+                        placeholder="Search products"
+                        value={searchText}
+                        onChange={(event)=> setSearchText(event.target.value)}
+                    />
+                </div>
+
                 <select
                     value={selectedCategory}
                     onChange={(event)=> setSelectedCategory(event.target.value)}
+                    aria-label="Filter by category"
                 >
                     {categories.map((category)=>(
                         <option key={category} value={category}>
@@ -104,11 +109,13 @@ function ProductList() {
                 <select
                     value={sortOrder}
                     onChange={(event) => setSortOrder(event.target.value)}
+                    aria-label="Sort products"
                 >
                     <option value="default">Default</option>
                     <option value="low-to-high">Price: Low to High</option>
                     <option value="high-to-low">Price: High to Low</option>
                 </select>
+
                 <button 
                     className="refresh-btn" 
                     onClick={handleRefreshProducts} 
@@ -117,22 +124,23 @@ function ProductList() {
                     {isLoading ? "Refreshing..." : "Refresh Products"}
                 </button>
 
-                {error && <p className="error-text">Could not refresh: {error}</p>}
-            </div>
+                {error && <p className="error-text filter-error">Could not refresh: {error}</p>}
+            </section>
 
             {filteredProducts.length === 0 ? (
-                <p className="empty-state">No products found for your search.</p>
+                <div className="empty-state">
+                    <div className="empty-state-icon">⌕</div>
+                    <h3>No products found</h3>
+                    <p>No products found for your search.</p>
+                </div>
             ):(
-                <div className="product-grid">
-                {/* We are looping over all products: */}
-
-                {filteredProducts.map((product) => (
-                    <ProductCard key={product.id} product={product} />
-                ))}
-            </div>
+                <section className="product-grid">
+                    {filteredProducts.map((product) => (
+                        <ProductCard key={product.id} product={product} />
+                    ))}
+                </section>
             )}
-            
-        </div>
+        </main>
     );
 }
 export default ProductList;

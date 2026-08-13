@@ -6,9 +6,7 @@ import { formatPrice } from "../utils/formatPrice";
 
 function ProductCard({ product }) {
 
-    const dispatch = useDispatch(); //This line gives us access to Redux dispatch: Send an instruction to Redux
-
-    // This quantity is only needed inside one product card.
+    const dispatch = useDispatch();
     const [selectedQuantity, setSelectedQuantity] = useState(1);
 
     const increaseSelectedQuantity = () => {
@@ -22,16 +20,12 @@ function ProductCard({ product }) {
     };
 
     const handleAddToCart = () => {
-        // Inside one button click, we are dispatching two actions:
-
-        // This updates cart state.
         dispatch(addToCart({
-                ...product, //Take all product details.
-                quantity : selectedQuantity, //add selected quantity also.
-            }) //send everything to redux.
-        ); //This line sends the selected product to Redux:
+                ...product,
+                quantity : selectedQuantity,
+            })
+        );
         
-        // This updates notification state.
         dispatch(showNotification({
                 message: `${product.name} added to cart.`,
                 type: "success",
@@ -42,39 +36,29 @@ function ProductCard({ product }) {
     };
 
     return(
-        <div className="product-card">
-            <img src={product.image} alt={product.name} onError={(event) => {event.target.src = "https://via.placeholder.com/200x150?text=No+Image";}}/>
-            <h3>{product.name}</h3>
-            <p className="product-category">{product.category}</p>
-            <p>{formatPrice(product.price)}</p>
-            <div className="product-quantity">
-                <button onClick={decreaseSelectedQuantity}>-</button>
-                <span>{selectedQuantity}</span>
-                <button onClick={increaseSelectedQuantity}>+</button>
+        <article className="product-card">
+            <div className="product-image-wrap">
+                <img src={product.image} alt={product.name} onError={(event) => {event.target.src = "https://via.placeholder.com/200x150?text=No+Image";}}/>
+                <span className="product-category">{product.category}</span>
             </div>
-            <button className="addToCartBtn" onClick={handleAddToCart}>Add to Cart</button>
-        </div>
+
+            <div className="product-card-body">
+                <div className="product-card-copy">
+                    <h3>{product.name}</h3>
+                    <p className="product-price">{formatPrice(product.price)}</p>
+                </div>
+
+                <div className="product-buy-row">
+                    <div className="product-quantity" aria-label={`Select quantity for ${product.name}`}>
+                        <button onClick={decreaseSelectedQuantity} aria-label="Decrease quantity">−</button>
+                        <span>{selectedQuantity}</span>
+                        <button onClick={increaseSelectedQuantity} aria-label="Increase quantity">+</button>
+                    </div>
+                    <button className="addToCartBtn" onClick={handleAddToCart}>Add to Cart</button>
+                </div>
+            </div>
+        </article>
     );
 }
 
 export default ProductCard;
-
-// So when user clicks Add to Cart, this flow happens:
-// Button click
-//    ↓
-// handleAddToCart()
-//    ↓
-// dispatch(addToCart(product))
-//    ↓
-// cartSlice reducer runs
-//    ↓
-// Redux state updates
-//    ↓
-// UI updates automatically
-
-
-// Add to Cart button click
-//         ↓
-// cart/addToCart
-//         ↓
-// notification/showNotification

@@ -9,12 +9,9 @@ function Toast(){
 
     useEffect(() => {
         if(isVisible){
-            // When toast becomes visible,
             const timer = setTimeout(() => {
-                // wait 2 seconds, then hide it.
                 dispatch(hideNotification());
             }, 2000);
-            //this line is cleanup. It prevents old timers from creating bugs.
             return () => clearTimeout(timer);
         }
     },[isVisible, dispatch]);
@@ -23,7 +20,12 @@ function Toast(){
         return null;
     }
 
-    return <div className={`toast toast-${type}`}>{message}</div>;
+    return (
+        <div className={`toast toast-${type}`} role="status" aria-live="polite">
+            <span className="toast-dot"></span>
+            <span>{message}</span>
+        </div>
+    );
 }
 
 export default Toast;

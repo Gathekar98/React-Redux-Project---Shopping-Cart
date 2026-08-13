@@ -8,7 +8,13 @@ function Navbar() {
 
     return(
         <nav className="navbar">
-            <h1>Shopping Cart Redux App</h1>
+            <div className="brand-block">
+                <div className="brand-mark">S</div>
+                <div>
+                    <p className="brand-kicker">Everyday essentials</p>
+                    <h1>ShopKart</h1>
+                </div>
+            </div>
 
             <div className="nav-links">
                 <NavLink to="/">Products</NavLink>
@@ -18,8 +24,14 @@ function Navbar() {
             </div>
 
             <div className="cart-summary">
-                <p>Total Items: {totalQuantity}</p>
-                <p>Total : {formatPrice(totalAmount)}</p>
+                <div>
+                    <span className="summary-label">Items</span>
+                    <strong>{totalQuantity}</strong>
+                </div>
+                <div>
+                    <span className="summary-label">Cart total</span>
+                    <strong>{formatPrice(totalAmount)}</strong>
+                </div>
             </div>
         </nav>
     );

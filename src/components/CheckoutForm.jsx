@@ -9,16 +9,12 @@ import { formatPrice } from "../utils/formatPrice";
 function CheckoutForm() {
 
     const dispatch = useDispatch();
-
-    {/* React Router’s useNavigate gives us a function to navigate programmatically */}
     const navigate = useNavigate();
 
     const cartItems = useSelector((state)=>state.cart.cartItems);
     const totalAmount = useSelector((state)=>state.cart.totalAmount);
     const totalQuantity = useSelector((state)=>state.cart.totalQuantity);
 
-    // This is local component state:
-    // This data belongs only to the checkout form.
     const [formData, setFormData] = useState({
         fullName: "", 
         email: "",
@@ -27,14 +23,10 @@ function CheckoutForm() {
         pincode: "",
     });
 
-    // We added one new state: This stores error messages.
     const [errors, setErrors] = useState({});
     const [orderSuccess, setOrderSuccess] = useState(false);
 
-
-    // This function checks the form values:
     const validateForm = () => {
-        // This function checks the form values:
         const newErrors = {};
 
         if(formData.fullName.trim().length <3){
@@ -56,26 +48,17 @@ function CheckoutForm() {
         if(!/^[0-9]{6}$/.test(formData.pincode)){
             newErrors.pincode = "Pincode must be exactly 6 digits.";
         }
-        // Check every field.
-        // If any field is wrong, add error message.
-        // Return all errors.
         return newErrors;
     }
-    
 
-    // When the user types, this function runs:
     const handleInputChange = (e) => {
-
-        // This part gets the input name and value:
         const { name, value} = e.target;
 
-        // Then this updates only that field:
         setFormData({
             ...formData,
             [name]: value,
         })
 
-        // When user starts typing again in a field, clear the error message for that field.
         setErrors({
             ...errors,
             [name]:"",
@@ -87,41 +70,30 @@ function CheckoutForm() {
 
         if(cartItems.length === 0){
             alert("Your cart is empty. please add products before checkout.");
-            {/* we can redirect the user after actions like empty-cart checkout or successful order. */}
             navigate("/");
             return;
         }
 
         const validationErrors = validateForm();
 
-        // If there is even one error,
-        // show errors on screen,
-        // stop form submit.
         if(Object.keys(validationErrors).length > 0){
             setErrors(validationErrors);
             return;
         }
-        // So the order will not be placed until all fields are valid.
         
         const orderData = {
-            id: `ORD-${Date.now()}`, //e.g. ORD-1720000000000
+            id: `ORD-${Date.now()}`,
             customer: {
-                ...formData, //This stores checkout form details.
+                ...formData,
             },
             items: cartItems.map((item) => ({
-                ...item, //This stores checkout form details.
+                ...item,
             })),
-            totalAmount, //This stores the order value.
-            totalQuantity, //This stores the total quantity of items.
-            orderDate: new Date().toLocaleString(), //This stores the date and time of order.
+            totalAmount,
+            totalQuantity,
+            orderDate: new Date().toLocaleString(),
         };
         dispatch(addOrder(orderData));
-
-        // console.log("Order Details :" ,{
-        //     customer : formData,
-        //     products : cartItems,
-        //     totalAmount : totalAmount,
-        // });
 
         dispatch(clearCart());
         dispatch(showNotification({
@@ -143,99 +115,132 @@ function CheckoutForm() {
 
     if(orderSuccess){
         return (
-            <div className="checkout-success">
+            <main className="checkout-success">
+                <div className="success-icon">✓</div>
+                <p className="eyebrow">Order confirmed</p>
                 <h2>Order Placed Successfully!</h2>
                 <p>Thank you for shopping with us.</p>
-                {/* we can redirect the user after actions like empty-cart checkout or successful order. */}
-                <button onClick={()=>navigate("/")}>Continue Shopping</button>
-                <button onClick={()=>navigate("/orders")}>View Orders</button>
-            </div>
+                <div className="success-actions">
+                    <button onClick={()=>navigate("/")}>Continue Shopping</button>
+                    <button className="secondary-action" onClick={()=>navigate("/orders")}>View Orders</button>
+                </div>
+            </main>
         );
     }
 
     return (
-        <div className="checkout">
-            <h2>Checkout</h2>
+        <main className="checkout">
+            <section className="page-intro checkout-intro">
+                <p className="eyebrow">Almost there</p>
+                <h2>Checkout</h2>
+                <p>Enter your delivery details and review the order summary before placing your order.</p>
+            </section>
 
-            <div className="checkout-summary">
-                <p>Total Products : {cartItems.length}</p>
-                 <p>Total Quantity: {totalQuantity}</p>
-                <p>Total Amount : {formatPrice(totalAmount)}</p>
+            <div className="checkout-layout">
+                <form onSubmit={handleSubmit} className="checkout-form">
+                    <div className="form-section-heading">
+                        <span>Delivery details</span>
+                        <small>All fields are required</small>
+                    </div>
+
+                    <div className="form-group full-width">
+                        <label htmlFor="fullName">Full Name</label>
+                        <input
+                            id="fullName"
+                            type="text"
+                            name="fullName"
+                            value={formData.fullName}
+                            onChange={handleInputChange}
+                            placeholder="Enter your full name"
+                            autoComplete="name"
+                            required
+                        />
+                        {errors.fullName && <p className="error-text">{errors.fullName}</p>}
+                    </div>
+
+                    <div className="form-group full-width">
+                        <label htmlFor="email">Email</label>
+                        <input
+                            id="email"
+                            type="email"
+                            name="email"
+                            value={formData.email}
+                            onChange={handleInputChange}
+                            placeholder="Enter your email"
+                            autoComplete="email"
+                            required
+                        />
+                        {errors.email && <p className="error-text">{errors.email}</p>}
+                    </div>
+
+                    <div className="form-group full-width">
+                        <label htmlFor="address">Address</label>
+                        <textarea
+                            id="address"
+                            name="address"
+                            value={formData.address}
+                            onChange={handleInputChange}
+                            placeholder="Enter your address"
+                            autoComplete="street-address"
+                            required
+                        />
+                        {errors.address && <p className="error-text">{errors.address}</p>}
+                    </div>
+
+                    <div className="form-group">
+                        <label htmlFor="city">City</label>
+                        <input
+                            id="city"
+                            type="text"
+                            name="city"
+                            value={formData.city}
+                            onChange={handleInputChange}
+                            placeholder="Enter your city"
+                            autoComplete="address-level2"
+                            required
+                        />
+                        {errors.city && <p className="error-text">{errors.city}</p>}
+                    </div>
+
+                    <div className="form-group">
+                        <label htmlFor="pincode">Pincode</label>
+                        <input
+                            id="pincode"
+                            type="text"
+                            name="pincode"
+                            value={formData.pincode}
+                            onChange={handleInputChange}
+                            placeholder="Enter your pincode"
+                            autoComplete="postal-code"
+                            inputMode="numeric"
+                            required
+                        />
+                        {errors.pincode && <p className="error-text">{errors.pincode}</p>}
+                    </div>
+
+                    <button type="submit" className="place-order-btn full-width">Place Order</button>
+                </form>
+
+                <aside className="checkout-summary">
+                    <p className="eyebrow">Order summary</p>
+                    <h3>Review your cart</h3>
+                    <div className="summary-row">
+                        <span>Total Products</span>
+                        <strong>{cartItems.length}</strong>
+                    </div>
+                    <div className="summary-row">
+                        <span>Total Quantity</span>
+                        <strong>{totalQuantity}</strong>
+                    </div>
+                    <div className="summary-divider"></div>
+                    <div className="summary-row summary-total-row">
+                        <span>Total Amount</span>
+                        <strong>{formatPrice(totalAmount)}</strong>
+                    </div>
+                    <p className="summary-note">Your cart stays unchanged until the order is successfully placed.</p>
+                </aside>
             </div>
-
-            <form onSubmit={handleSubmit} className="checkout-form">
-                <div className="form-group">
-                    <label>Full Name</label>
-                    <input
-                    type="text"
-                    name="fullName"
-                    value={formData.fullName}
-                    onChange={handleInputChange}
-                    placeholder="Enter your full name"
-                    required
-                    >
-                    </input>
-                    {errors.fullName && <p className="error-text">{errors.fullName}</p>}
-                </div>
-
-                <div className="form-group">
-                    <label>Email</label>
-                    <input
-                    type="email"
-                    name="email"
-                    value={formData.email}
-                    onChange={handleInputChange}
-                    placeholder="Enter your email"
-                    required
-                    >
-                    </input>
-                    {errors.email && <p className="error-text">{errors.email}</p>}
-                </div>
-
-                <div className="form-group">
-                    <label>Address</label>
-                    <textarea
-                    name="address"
-                    value={formData.address}
-                    onChange={handleInputChange}
-                    placeholder="Enter your address"
-                    required
-                    >
-                    </textarea>
-                    {errors.address && <p className="error-text">{errors.address}</p>}
-                </div>
-
-                <div className="form-group">
-                    <label>City</label>
-                    <input
-                    type="text"
-                    name="city"
-                    value={formData.city}
-                    onChange={handleInputChange}
-                    placeholder="Enter your city"
-                    required
-                    >
-                    </input>
-                    {errors.city && <p className="error-text">{errors.city}</p>}
-                </div>
-
-                <div className="form-group">
-                    <label>Pincode</label>
-                    <input
-                        type="text"
-                        name="pincode"
-                        value={formData.pincode}
-                        onChange={handleInputChange}
-                        placeholder="Enter your pincode"
-                        required
-                        >
-                    </input>
-                    {errors.pincode && <p className="error-text">{errors.pincode}</p>}
-                </div>
-
-                <button type="submit" className="place-order-btn">Place Order</button>
-            </form>
-        </div>
+        </main>
     );
 }
 export default CheckoutForm;
