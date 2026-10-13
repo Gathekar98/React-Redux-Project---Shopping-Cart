@@ -4,6 +4,7 @@ import CartItem from './CartItem';
 import { clearCart } from '../features/cart/cartSlice';
 import { showNotification } from '../features/notification/notificationSlice';
 import { formatPrice } from '../utils/formatPrice';
+import Icon from './Icon';
 
 function Cart() {
 
@@ -27,9 +28,10 @@ function Cart() {
 
     return(
         <main className="cart">
+            <nav className="breadcrumbs"><button onClick={() => navigate('/')}>Home</button><Icon name="chevron" size={14}/><b>Cart</b></nav>
             <section className="page-intro cart-intro">
                 <div>
-                    <p className="eyebrow">Your selection</p>
+                    <p className="eyebrow">Your bag</p>
                     <h2>Shopping Cart</h2>
                     <p>Review quantities, remove items, and continue when everything looks right.</p>
                 </div>
@@ -40,7 +42,7 @@ function Cart() {
 
             {cartItems.length === 0 ? (
                 <section className="empty-state cart-empty-state">
-                    <div className="empty-state-icon">🛒</div>
+                    <div className="empty-state-icon"><Icon name="cart" size={28}/></div>
                     <h3>Your cart is empty.</h3>
                     <p>Add a few products and they’ll appear here.</p>
                     <button className="primary-btn" onClick={() => navigate("/")}>Continue Shopping</button>
@@ -72,8 +74,9 @@ function Cart() {
                             <strong>{formatPrice(totalAmount)}</strong>
                         </div>
                         <p className="summary-note">Taxes and delivery charges, if applicable, can be shown at checkout.</p>
-                        <button className="checkout-btn" onClick={() => navigate("/checkout")}>Proceed to Checkout</button>
-                        <button className="clear-cart-btn" onClick={handleClearCart}>Clear Cart</button>
+                        <button className="checkout-btn" onClick={() => navigate("/checkout")}>Proceed to Checkout <Icon name="arrow" size={18}/></button>
+                        <button className="continue-shopping-btn" onClick={() => navigate('/')}>Continue Shopping</button>
+                        <button className="clear-cart-btn" onClick={handleClearCart}><Icon name="trash" size={16}/> Clear Cart</button>
                     </aside>
                 </div>
             )}

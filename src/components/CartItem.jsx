@@ -2,6 +2,7 @@ import { useDispatch } from 'react-redux';
 import { increaseQuantity, decreaseQuantity, removeFromCart } from '../features/cart/cartSlice';
 import { showNotification } from '../features/notification/notificationSlice';
 import { formatPrice } from '../utils/formatPrice';
+import Icon from './Icon';
 
 function CartItem({ item }) {
     const dispatch = useDispatch();
@@ -19,12 +20,12 @@ function CartItem({ item }) {
     return(
         <article className="cart-item">
             <div className="cart-item-image">
-                <img src={item.image} alt={item.name} />
+                <img src={item.image} alt={item.name} onError={(event) => { event.currentTarget.src = "/favicon.svg"; }} />
             </div>
 
             <div className="cart-item-info">
                 <h3>{item.name}</h3>
-                <p className="cart-item-unit-price">Price: {formatPrice(item.price)}</p>
+                <p className="cart-item-unit-price">{formatPrice(item.price)} each</p>
                 <p className="cart-item-total">{formatPrice(item.price * item.quantity)}</p>
             </div>
 
@@ -38,7 +39,7 @@ function CartItem({ item }) {
                     className="remove-btn"
                     onClick={handleRemoveFromCart}
                 >
-                    Remove
+                    <Icon name="trash" size={15}/> Remove
                 </button>
             </div>
         </article>

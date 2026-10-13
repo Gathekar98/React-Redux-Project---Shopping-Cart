@@ -5,6 +5,7 @@ import { clearCart } from "../features/cart/cartSlice";
 import { addOrder } from "../features/orders/orderSlice";
 import { showNotification } from "../features/notification/notificationSlice";
 import { formatPrice } from "../utils/formatPrice";
+import Icon from "./Icon";
 
 function CheckoutForm() {
 
@@ -130,6 +131,7 @@ function CheckoutForm() {
 
     return (
         <main className="checkout">
+            <div className="checkout-steps"><span className="complete"><b><Icon name="check" size={15}/></b> Cart</span><i></i><span className="active"><b>2</b> Delivery</span><i></i><span><b>3</b> Confirm</span></div>
             <section className="page-intro checkout-intro">
                 <p className="eyebrow">Almost there</p>
                 <h2>Checkout</h2>
@@ -139,7 +141,7 @@ function CheckoutForm() {
             <div className="checkout-layout">
                 <form onSubmit={handleSubmit} className="checkout-form">
                     <div className="form-section-heading">
-                        <span>Delivery details</span>
+                        <span><Icon name="truck" size={18}/> Delivery details</span>
                         <small>All fields are required</small>
                     </div>
 
@@ -218,7 +220,8 @@ function CheckoutForm() {
                         {errors.pincode && <p className="error-text">{errors.pincode}</p>}
                     </div>
 
-                    <button type="submit" className="place-order-btn full-width">Place Order</button>
+                    <div className="payment-note full-width"><Icon name="shield"/><div><strong>Payment method</strong><p>This project has no payment integration. Your existing local order flow is preserved.</p></div></div>
+                    <button type="submit" className="place-order-btn full-width">Place Order <Icon name="arrow" size={18}/></button>
                 </form>
 
                 <aside className="checkout-summary">

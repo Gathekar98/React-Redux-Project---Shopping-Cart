@@ -29,8 +29,8 @@ export const store = configureStore({
 // Whenever Redux state changes, save latest cart data to localStorage.
 // So when you add, remove, increase, decrease, or clear cart, localStorage also gets updated.
 store.subscribe(() => {
-    saveToLocalStorage(store.getState().cart);
-    saveToLocalStorage(store.getState().orders);
+    saveToLocalStorage("cart", store.getState().cart);
+    saveToLocalStorage("orders", store.getState().orders);
 });
 
 
