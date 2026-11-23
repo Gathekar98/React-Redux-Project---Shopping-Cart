@@ -51,6 +51,49 @@ export const fetchDepartmentCounts = createAsyncThunk(
   }
 );
 
+const IMAGE_CHECK_TIMEOUT_MS = 15000;
+
+// Resolves false only when the image definitely fails to load.
+// A slow image counts as available, so nothing is hidden by mistake.
+const imageLoads = (src) =>
+  new Promise((resolve) => {
+    const image = new Image();
+    const timer = setTimeout(() => resolve(true), IMAGE_CHECK_TIMEOUT_MS);
+    image.onload = () => { clearTimeout(timer); resolve(true); };
+    image.onerror = () => { clearTimeout(timer); resolve(false); };
+    image.src = src;
+  });
+
+export const getCategoryKey = (audience, category) => `${audience}/${category}`;
+
+// For each category in a department, check that it has products and that
+// its images actually load. Categories that fail are hidden from the shop.
+export const checkDepartmentCategories = createAsyncThunk(
+  "products/checkDepartmentCategories",
+  async (audience, { getState }) => {
+    const known = getState().products.categoryStatus;
+    const department = DEPARTMENTS.find((item) => item.key === audience);
+    const toCheck = (department?.categories ?? []).filter((category) => !known[getCategoryKey(audience, category)]);
+    const entries = await Promise.all(
+      toCheck.map(async (category) => {
+        const key = getCategoryKey(audience, category);
+        try {
+          const json = await getJson(buildProductsUrl({ audience, category, limit: 1 }));
+          const first = json.data[0];
+          const available = Boolean(first?.image) && await imageLoads(first.image);
+          return [key, { available, total: json.meta.total }];
+        } catch {
+          return [key, { available: true, total: 0 }]; // unknown: keep showing it
+        }
+      })
+    );
+    return Object.fromEntries(entries);
+  },
+  {
+    condition: (audience, { getState }) => Boolean(audience) && !getState().products.checkingDepartments[audience],
+  }
+);
+
 const initialState = {
   filters: { audience: "", category: "", q: "", sort: "" },
   products: [],
@@ -68,6 +111,10 @@ const initialState = {
   related: [],
   relatedFor: null,
   departmentCounts: {},
+
+  brokenImageIds: {}, // product ids whose image failed to load in a card
+  categoryStatus: {}, // "women/tops" -> { available, total }
+  checkingDepartments: {},
 };
 
 export const getFiltersKey = (filters) => JSON.stringify(filters);
@@ -84,6 +131,9 @@ const productSlice = createSlice({
         next.category = action.payload.category ?? "";
       }
       state.filters = next;
+    },
+    markImageBroken: (state, action) => {
+      state.brokenImageIds[action.payload] = true;
     },
     resetFilters: (state) => {
       state.filters = initialState.filters;
@@ -138,9 +188,36 @@ const productSlice = createSlice({
 
       .addCase(fetchDepartmentCounts.fulfilled, (state, action) => {
         state.departmentCounts = action.payload;
+      })
+
+      .addCase(checkDepartmentCategories.pending, (state, action) => {
+        state.checkingDepartments[action.meta.arg] = true;
+      })
+      .addCase(checkDepartmentCategories.fulfilled, (state, action) => {
+        Object.assign(state.categoryStatus, action.payload);
       });
   },
 });
 
-export const { setFilters, resetFilters } = productSlice.actions;
+export const { setFilters, resetFilters, markImageBroken } = productSlice.actions;
+
+// --- Selectors: what the shop should actually show -------------------------
+
+// These take the products slice: useSelector((state) => state.products).
+
+export const isCategoryHidden = ({ categoryStatus }, audience, category) =>
+  categoryStatus[getCategoryKey(audience, category)]?.available === false;
+
+export const isProductVisible = (products, product) =>
+  !products.brokenImageIds[product.id] && !isCategoryHidden(products, product.audience, product.category);
+
+// Total products of the hidden categories that match the given filters.
+export const getHiddenTotal = ({ categoryStatus }, { audience = "", category = "" } = {}) =>
+  Object.entries(categoryStatus).reduce((sum, [key, status]) => {
+    if (status.available) return sum;
+    const [statusAudience, statusCategory] = key.split("/");
+    if (audience && audience !== statusAudience) return sum;
+    if (category && category !== statusCategory) return sum;
+    return sum + status.total;
+  }, 0);
 export default productSlice.reducer;

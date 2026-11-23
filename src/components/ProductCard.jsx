@@ -4,6 +4,7 @@ import { Link } from "react-router";
 import { addToCart } from "../features/cart/cartSlice";
 import { showNotification } from "../features/notification/notificationSlice";
 import { toTitleCase } from "../features/products/catalog";
+import { markImageBroken } from "../features/products/productSlice";
 import { formatPrice } from "../utils/formatPrice";
 import Icon from "./Icon";
 
@@ -22,7 +23,7 @@ function ProductCard({ product }) {
     return (
         <article className={`product-card ${product.inStock ? "" : "is-sold-out"}`}>
             <div className={`product-image-wrap audience-${product.audience}`}>
-                <Link to={productUrl} aria-label={`View ${product.name}`}><img src={product.image} alt={product.name} loading="lazy" onError={(event) => { event.currentTarget.src = "/favicon.svg"; }} /></Link>
+                <Link to={productUrl} aria-label={`View ${product.name}`}><img src={product.image} alt={product.name} loading="lazy" onError={() => dispatch(markImageBroken(product.id))} /></Link>
                 {product.discount > 0 && <span className="discount-badge">{product.discount}% off</span>}
                 {!product.inStock && <span className="sold-out-badge">Out of stock</span>}
                 <button className={`wishlist-btn ${isWishlisted ? "active" : ""}`} onClick={toggleWishlist} aria-label={isWishlisted ? "Remove from wishlist" : "Add to wishlist"}><Icon name="heart" size={18} filled={isWishlisted}/></button>

@@ -1,8 +1,8 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useLocation } from "react-router";
-import { fetchDepartmentCounts, fetchProducts, getFiltersKey, resetFilters, setFilters } from "../features/products/productSlice";
-import { DEPARTMENTS, SORT_OPTIONS, getDepartment, toTitleCase } from "../features/products/catalog";
+import { checkDepartmentCategories, fetchDepartmentCounts, fetchProducts, getFiltersKey, getHiddenTotal, isCategoryHidden, isProductVisible, resetFilters, setFilters } from "../features/products/productSlice";
+import { DEPARTMENTS, PAGE_SIZE, SORT_OPTIONS, getDepartment, toTitleCase } from "../features/products/catalog";
 import ProductCard from "./ProductCard";
 import Icon from "./Icon";
 
@@ -11,13 +11,23 @@ const SLOW_SERVER_MS = 4000;
 
 function ProductList() {
     const dispatch = useDispatch();
-    const { products, meta, filters, loadedFiltersKey, isLoading, loadingPage, latestRequestId, error, departmentCounts } = useSelector((state) => state.products);
+    const productsState = useSelector((state) => state.products);
+    const { products, meta, filters, loadedFiltersKey, isLoading, loadingPage, latestRequestId, error, departmentCounts, brokenImageIds, categoryStatus } = productsState;
     const [searchText, setSearchText] = useState(filters.q);
     const [mobileFilters, setMobileFilters] = useState(false);
     const [slowRequestId, setSlowRequestId] = useState(null);
     const filtersKey = getFiltersKey(filters);
     const department = getDepartment(filters.audience);
-    const totalProducts = departmentCounts[""] ?? meta?.total ?? 0;
+
+    // Products whose images don't load are not shown, and not counted.
+    const visibility = useMemo(() => ({ brokenImageIds, categoryStatus }), [brokenImageIds, categoryStatus]);
+    const visibleProducts = useMemo(() => products.filter((product) => isProductVisible(visibility, product)), [products, visibility]);
+    const countFor = (audience) => departmentCounts[audience] === undefined ? undefined : departmentCounts[audience] - getHiddenTotal(visibility, { audience });
+    const totalProducts = countFor("") ?? meta?.total ?? 0;
+    const matchingTotal = !meta ? 0 : filters.q
+        ? meta.total - (products.length - visibleProducts.length)
+        : meta.total - getHiddenTotal(visibility, { audience: filters.audience, category: filters.category });
+    const visibleCategories = department.categories.filter((category) => !isCategoryHidden(visibility, department.key, category));
 
     // Fetch page 1 whenever the filters differ from what is already loaded.
     // Coming back from a product page keeps the list as it was.
@@ -30,12 +40,30 @@ function ProductList() {
         if (!Object.keys(departmentCounts).length) dispatch(fetchDepartmentCounts());
     }, [dispatch, departmentCounts]);
 
+    // Once the shop has loaded, check every category's images in the background.
+    const hasLoaded = products.length > 0;
+    useEffect(() => {
+        if (hasLoaded) DEPARTMENTS.forEach(({ key }) => { if (key) dispatch(checkDepartmentCategories(key)); });
+    }, [dispatch, hasLoaded]);
+
+    // If hidden products leave less than a page to show, fetch the next page too.
+    const needsMore = hasLoaded && !isLoading && !error && Boolean(meta?.hasNextPage) && visibleProducts.length < PAGE_SIZE;
+    useEffect(() => {
+        if (needsMore) dispatch(fetchProducts({ page: (meta?.page ?? 1) + 1 }));
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [dispatch, needsMore]);
+
+    // Leave a category that turned out to have no images.
+    const categoryHidden = Boolean(filters.category) && isCategoryHidden(visibility, filters.audience, filters.category);
+    useEffect(() => {
+        if (categoryHidden) dispatch(setFilters({ category: "" }));
+    }, [dispatch, categoryHidden]);
+
     // Links such as "/#catalog" (breadcrumbs, navbar) land on the catalog.
     const { hash, key: locationKey } = useLocation();
-    const hasProducts = products.length > 0;
     useEffect(() => {
-        if (hash && hasProducts) document.querySelector(hash)?.scrollIntoView();
-    }, [hash, locationKey, hasProducts]);
+        if (hash && hasLoaded) document.querySelector(hash)?.scrollIntoView();
+    }, [hash, locationKey, hasLoaded]);
 
     // Search on the server once the user pauses typing.
     useEffect(() => {
@@ -60,7 +88,7 @@ function ProductList() {
     const refresh = () => dispatch(fetchProducts({ page: 1 }));
     const loadMore = () => dispatch(fetchProducts({ page: (meta?.page ?? 1) + 1 }));
 
-    if (isLoading && products.length === 0) return <main className="loading-page">{isSlow && <p className="server-wake-note"><Icon name="refresh" size={16}/> Waking up the product server. The first load can take up to a minute.</p>}<div className="skeleton-hero"></div><div className="skeleton-grid">{Array.from({length: 8}).map((_, i) => <div className="skeleton-card" key={i}></div>)}</div></main>;
+    if (isLoading && !hasLoaded) return <main className="loading-page">{isSlow && <p className="server-wake-note"><Icon name="refresh" size={16}/> Waking up the product server. The first load can take up to a minute.</p>}<div className="skeleton-hero"></div><div className="skeleton-grid">{Array.from({length: 8}).map((_, i) => <div className="skeleton-card" key={i}></div>)}</div></main>;
     if (error && products.length === 0) return <main className="api-error"><span className="state-icon">!</span><p className="eyebrow">We hit a snag</p><h2>We couldn’t load the collection.</h2><p>{error}</p><button className="primary-btn" onClick={refresh}><Icon name="refresh" size={18}/> Try again</button></main>;
 
     const heading = filters.category ? toTitleCase(filters.category) : filters.audience ? `${department.label}'s collection` : "Trending products";
@@ -76,13 +104,13 @@ function ProductList() {
                 <div className="category-scroller">{DEPARTMENTS.map((item) => (
                     <button key={item.key || "all"} className={`category-card has-photo ${filters.audience === item.key ? "active" : ""}`} onClick={() => chooseDepartment(item.key)}>
                         <span className="category-photo"><img src={item.image} alt="" loading="lazy"/></span>
-                        <span className="category-card-copy"><b>{item.label}</b><small>{departmentCounts[item.key] ?? "–"} items</small></span>
+                        <span className="category-card-copy"><b>{item.label}</b><small>{countFor(item.key) ?? "–"} items</small></span>
                     </button>
                 ))}</div>
             </section>
 
             <section className="catalog-section" id="catalog">
-                <div className="section-heading catalog-heading"><div><p className="eyebrow">{filters.audience ? department.label : "Curated for you"}</p><h2>{heading}</h2><p>{filters.q ? `Results for “${filters.q}”` : "Every product currently available in our live collection."}</p></div><span className="result-count">{meta?.total ?? 0} products</span></div>
+                <div className="section-heading catalog-heading"><div><p className="eyebrow">{filters.audience ? department.label : "Curated for you"}</p><h2>{heading}</h2><p>{filters.q ? `Results for “${filters.q}”` : "Every product currently available in our live collection."}</p></div><span className="result-count">{matchingTotal} products</span></div>
 
                 <div className="catalog-toolbar">
                     <label className="catalog-search"><Icon name="search" size={19}/><span className="sr-only">Search products</span><input value={searchText} onChange={(e) => setSearchText(e.target.value)} placeholder="Search by name, brand or category"/></label>
@@ -96,16 +124,16 @@ function ProductList() {
 
                 {department.categories.length > 0 && <div className="category-chips" role="group" aria-label={`${department.label} categories`}>
                     <button className={!filters.category ? "active" : ""} onClick={() => dispatch(setFilters({ category: "" }))}>All {department.label}</button>
-                    {department.categories.map((category) => <button key={category} className={filters.category === category ? "active" : ""} onClick={() => dispatch(setFilters({ category }))}>{toTitleCase(category)}</button>)}
+                    {visibleCategories.map((category) => <button key={category} className={filters.category === category ? "active" : ""} onClick={() => dispatch(setFilters({ category }))}>{toTitleCase(category)}</button>)}
                 </div>}
 
                 {error && <p className="inline-error">Could not load products: {error}</p>}
                 {isLoading && !isLoadingMore && isSlow && <p className="server-wake-note"><Icon name="refresh" size={16}/> Waking up the product server…</p>}
 
-                {products.length ? <>
-                    <div className={`product-grid ${isLoading && !isLoadingMore ? "is-refreshing" : ""}`}>{products.map((product) => <ProductCard key={product.id} product={product}/>)}</div>
+                {visibleProducts.length || meta?.hasNextPage ? <>
+                    <div className={`product-grid ${isLoading && !isLoadingMore ? "is-refreshing" : ""}`}>{visibleProducts.map((product) => <ProductCard key={product.id} product={product}/>)}</div>
                     <div className="load-more">
-                        <p>Showing {products.length} of {meta?.total ?? products.length}</p>
+                        <p>Showing {visibleProducts.length} of {Math.max(matchingTotal, visibleProducts.length)}</p>
                         {meta?.hasNextPage && <button className="secondary-btn" onClick={loadMore} disabled={isLoading}>{isLoadingMore ? "Loading…" : "Load more products"}</button>}
                     </div>
                 </> : !isLoading && <div className="empty-state"><span className="state-icon"><Icon name="search" size={28}/></span><h3>No matching products</h3><p>Try another search or choose a different department.</p><button className="secondary-btn" onClick={clearAll}>Clear filters</button></div>}

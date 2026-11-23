@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { Link, useNavigate, useParams } from "react-router";
-import { fetchProductById, fetchRelatedProducts, setFilters } from "../features/products/productSlice";
+import { fetchProductById, fetchRelatedProducts, isCategoryHidden, isProductVisible, markImageBroken, setFilters } from "../features/products/productSlice";
 import { getDepartment, toTitleCase } from "../features/products/catalog";
 import { addToCart } from "../features/cart/cartSlice";
 import { showNotification } from "../features/notification/notificationSlice";
@@ -13,7 +13,10 @@ function ProductDetailPage() {
   const { productId } = useParams();
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const { products, selectedProduct, related } = useSelector((state) => state.products);
+  const productsState = useSelector((state) => state.products);
+  const { products, selectedProduct, brokenImageIds } = productsState;
+  // Only suggest related products whose images load.
+  const related = productsState.related.filter((item) => isProductVisible(productsState, item));
   const selectedStatus = useSelector((state) => state.products.selectedId === productId ? state.products.selectedStatus : "idle");
   // Use the product from the loaded list when we have it; otherwise ask the API.
   const product = products.find((item) => item.id === productId)
@@ -38,6 +41,7 @@ function ProductDetailPage() {
   if (!product && selectedStatus === "failed") return <main className="api-error"><span className="state-icon">!</span><h2>We couldn’t load this product.</h2><button className="primary-btn" onClick={() => dispatch(fetchProductById(productId))}><Icon name="refresh" size={18}/> Try again</button></main>;
   if (!product) return <main className="loading-page"><div className="skeleton-hero"></div></main>;
 
+  const imageMissing = Boolean(brokenImageIds[product.id]) || isCategoryHidden(productsState, product.audience, product.category);
   const department = getDepartment(product.audience);
   const category = toTitleCase(product.category);
   const savings = product.originalPrice - product.price;
@@ -47,7 +51,7 @@ function ProductDetailPage() {
   return <main className="product-detail-page">
     <nav className="breadcrumbs"><Link to="/">Home</Link><Icon name="chevron" size={14}/><Link to="/#catalog" onClick={() => browse({ audience: product.audience })}>{department.label}</Link><Icon name="chevron" size={14}/><Link to="/#catalog" onClick={() => browse({ audience: product.audience, category: product.category })}>{category}</Link><Icon name="chevron" size={14}/><b>{product.name}</b></nav>
     <section className="product-detail">
-      <div className="product-gallery single-image"><div className={`main-product-image audience-${product.audience}`}><img src={product.image} alt={product.name} onError={(e) => { e.currentTarget.src = "/favicon.svg"; }}/>{product.discount > 0 && <span className="discount-badge">{product.discount}% off</span>}</div></div>
+      <div className="product-gallery single-image"><div className={`main-product-image audience-${product.audience}`}>{imageMissing ? <div className="image-placeholder"><Icon name="bag" size={42}/><span>Image coming soon</span></div> : <img src={product.image} alt={product.name} onError={() => dispatch(markImageBroken(product.id))}/>}{product.discount > 0 && <span className="discount-badge">{product.discount}% off</span>}</div></div>
       <div className="product-info">
         <p className="eyebrow">{product.brand}</p>
         <h1>{product.name}</h1>

@@ -118,3 +118,5 @@
 .category-photo img{width:100%;height:100%;object-fit:cover;transition:transform .35s ease}
 .category-card.has-photo:hover .category-photo img,.category-card.has-photo.active .category-photo img{transform:scale(1.06)}
 @media(max-width:560px){.category-card.has-photo{flex-basis:148px;min-width:148px}.category-card.has-photo>.category-photo{height:96px}}
+.image-placeholder{width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;color:var(--muted);background:#f1f5f9;font-size:.85rem;font-weight:600}
+.image-placeholder .icon{color:#cbd5e1}
