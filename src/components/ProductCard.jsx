@@ -3,6 +3,7 @@ import { useDispatch } from "react-redux";
 import { Link } from "react-router";
 import { addToCart } from "../features/cart/cartSlice";
 import { showNotification } from "../features/notification/notificationSlice";
+import { toTitleCase } from "../features/products/catalog";
 import { formatPrice } from "../utils/formatPrice";
 import Icon from "./Icon";
 
@@ -17,15 +18,33 @@ function ProductCard({ product }) {
         setIsWishlisted(!isWishlisted);
         dispatch(showNotification({ message: isWishlisted ? "Removed from wishlist." : "Saved to your wishlist.", type: "success" }));
     };
+    const productUrl = `/products/${product.id}`;
     return (
-        <article className="product-card">
-            <div className="product-image-wrap">
-                <Link to={`/products/${product.id}`} aria-label={`View ${product.name}`}><img src={product.image} alt={product.name} loading="lazy" onError={(event) => { event.currentTarget.src = "/favicon.svg"; }} /></Link>
-                <span className="product-category">{product.category || "Featured"}</span>
+        <article className={`product-card ${product.inStock ? "" : "is-sold-out"}`}>
+            <div className={`product-image-wrap audience-${product.audience}`}>
+                <Link to={productUrl} aria-label={`View ${product.name}`}><img src={product.image} alt={product.name} loading="lazy" onError={(event) => { event.currentTarget.src = "/favicon.svg"; }} /></Link>
+                {product.discount > 0 && <span className="discount-badge">{product.discount}% off</span>}
+                {!product.inStock && <span className="sold-out-badge">Out of stock</span>}
                 <button className={`wishlist-btn ${isWishlisted ? "active" : ""}`} onClick={toggleWishlist} aria-label={isWishlisted ? "Remove from wishlist" : "Add to wishlist"}><Icon name="heart" size={18} filled={isWishlisted}/></button>
-                <Link className="quick-view" to={`/products/${product.id}`}>Quick view</Link>
+                <Link className="quick-view" to={productUrl}>Quick view</Link>
             </div>
-            <div className="product-card-body"><div><p className="product-category-text">{product.category}</p><Link className="product-title" to={`/products/${product.id}`}>{product.name}</Link><div className="product-meta"><span className="stock-dot"></span> Available now</div></div><div className="product-card-footer"><p className="product-price">{formatPrice(product.price)}</p><button className="addToCartBtn" onClick={handleAddToCart} aria-label={`Add ${product.name} to cart`}><Icon name="cart" size={18}/><span>Add</span></button></div></div>
+            <div className="product-card-body">
+                <div>
+                    <p className="product-category-text">{product.brand} · {toTitleCase(product.category)}</p>
+                    <Link className="product-title" to={productUrl}>{product.name}</Link>
+                    <div className="product-meta">
+                        <span className="rating-pill"><Icon name="star" size={11} filled/>{product.rating}</span>
+                        <span>({product.ratingCount.toLocaleString("en-IN")})</span>
+                    </div>
+                </div>
+                <div className="product-card-footer">
+                    <div className="price-block">
+                        <p className="product-price">{formatPrice(product.price)}</p>
+                        {product.originalPrice > product.price && <s className="original-price">{formatPrice(product.originalPrice)}</s>}
+                    </div>
+                    <button className="addToCartBtn" onClick={handleAddToCart} disabled={!product.inStock} aria-label={product.inStock ? `Add ${product.name} to cart` : `${product.name} is out of stock`}><Icon name="cart" size={18}/><span>{product.inStock ? "Add" : "Sold out"}</span></button>
+                </div>
+            </div>
         </article>
     );
 }
