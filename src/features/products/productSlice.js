@@ -4,7 +4,7 @@ export const fetchProducts = createAsyncThunk(
   "products/fetchProducts",
   async () => {
     const response = await fetch(
-      "https://api.escuelajs.co/api/v1/products"
+      "https://fakestoreapi.com/products"
     );
 
     if (!response.ok) {
@@ -13,13 +13,18 @@ export const fetchProducts = createAsyncThunk(
 
     const data = await response.json();
 
+    const toTitleCase = (text = "") =>
+      text.replace(/\b\w/g, (char, index) =>
+        index > 0 && text[index - 1] === "'" ? char : char.toUpperCase()
+      );
+
     return data.map((product) => ({
       id: product.id,
       name: product.title,
       price: product.price,
-      category: product.category?.name,
-      image: product.images?.[0],
-      images: product.images ?? [],
+      category: toTitleCase(product.category),
+      image: product.image,
+      images: product.image ? [product.image] : [],
       description: product.description,
     }));
   }
